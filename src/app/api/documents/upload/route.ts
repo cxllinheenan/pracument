@@ -1,8 +1,9 @@
 import { auth } from "@/auth"
 import { NextResponse } from "next/server"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
+import { prisma } from "@/lib/prisma"
 
-// Initialize S3 client outside request handler
+// Initialize S3 client with minimal configuration
 const s3Client = new S3Client({
   region: "auto",
   endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -10,6 +11,7 @@ const s3Client = new S3Client({
     accessKeyId: process.env.R2_ACCESS_KEY || '',
     secretAccessKey: process.env.R2_SECRET_KEY || '',
   },
+  forcePathStyle: true // Add this for R2 compatibility
 })
 
 export async function POST(request: Request) {
@@ -27,39 +29,86 @@ export async function POST(request: Request) {
   try {
     // Check authentication
     const session = await auth()
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    const formData = await request.formData()
-    const file = formData.get("file") as File
+    // Now TypeScript knows userId is defined
+    const userId = session.user.id
     
-    if (!file) {
-      return new NextResponse("No file provided", { status: 400 })
+    const formData = await request.formData()
+    const file = formData.get("file")
+    
+    if (!file || !(file instanceof File)) {
+      return new NextResponse(
+        JSON.stringify({ error: "No valid file provided" }), 
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // Validate file size (e.g., 10MB limit)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB in bytes
+    if (file.size > MAX_FILE_SIZE) {
+      return new NextResponse(
+        JSON.stringify({ error: "File size exceeds 10MB limit" }), 
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     // Convert File to Buffer
-    const buffer = Buffer.from(await file.arrayBuffer())
+    let buffer: Buffer
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      buffer = Buffer.from(arrayBuffer)
+    } catch (error) {
+      console.error("[FILE_CONVERSION_ERROR]", error)
+      return new NextResponse(
+        JSON.stringify({ error: "Failed to process file" }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Generate a unique filename
     const timestamp = Date.now()
     const fileName = `${timestamp}-${file.name}`
 
     try {
-      // Simple upload configuration
-      const command = new PutObjectCommand({
+      // Basic R2 upload configuration
+      await s3Client.send(new PutObjectCommand({
         Bucket: "pracument",
         Key: fileName,
         Body: buffer,
-        ContentType: file.type || "application/octet-stream",
-      })
+        ContentType: file.type || "application/octet-stream"
+      }))
 
-      await s3Client.send(command)
+      // Create document record in database
+      const document = await prisma.document.create({
+        data: {
+          name: file.name,
+          fileName: fileName,
+          size: buffer.length,
+          type: file.type || "application/octet-stream",
+          url: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com/pracument/${fileName}`,
+          userId: userId,
+        },
+      })
 
       return new NextResponse(
         JSON.stringify({ 
           message: "File uploaded successfully",
-          fileName: fileName 
+          document: {
+            id: document.id,
+            name: document.name,
+            size: document.size,
+            type: document.type,
+            createdAt: document.createdAt,
+          }
         }),
         {
           status: 200,
@@ -69,37 +118,19 @@ export async function POST(request: Request) {
           },
         }
       )
-    } catch (uploadError) {
-      console.error("[R2_UPLOAD_ERROR]", uploadError)
+    } catch (error) {
+      console.error("[R2_UPLOAD_ERROR]", error)
       return new NextResponse(
-        JSON.stringify({ 
-          error: "Failed to upload file to storage",
-          details: uploadError instanceof Error ? uploadError.message : "Unknown error"
-        }),
-        { 
-          status: 500,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        }
+        JSON.stringify({ error: "Failed to upload file" }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
       )
     }
 
   } catch (error) {
     console.error("[DOCUMENT_UPLOAD]", error)
     return new NextResponse(
-      JSON.stringify({
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error"
-      }),
-      { 
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-      }
+      JSON.stringify({ error: "Internal server error" }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     )
   }
 } 

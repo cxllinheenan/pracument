@@ -46,6 +46,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   loginLogs     LoginLog[]
+  documents     Document[]
 }
 
 model VerificationToken {
@@ -67,4 +68,19 @@ model LoginLog {
 
   @@index([userId])
   @@index([timestamp])
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String
+  fileName    String   // The actual filename in R2
+  size        Int      // File size in bytes
+  type        String   // MIME type
+  url         String?  // Optional R2 URL
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  
+  @@index([userId])
 } 
