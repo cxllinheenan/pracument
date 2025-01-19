@@ -19,14 +19,14 @@ export const {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials: Record<"email" | "password", string> | undefined) {
+      async authorize(credentials: Partial<Record<"email" | "password", unknown>>, request: Request) {
         try {
           if (!credentials?.email || !credentials?.password) {
             return null
           }
 
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email }
+            where: { email: credentials.email as string }
           })
 
           // Get request headers for logging
@@ -54,7 +54,7 @@ export const {
           }
 
           const isPasswordValid = await bcrypt.compare(
-            credentials.password,
+            credentials.password as string,
             user.password
           )
 
