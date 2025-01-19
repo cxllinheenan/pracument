@@ -2,12 +2,20 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { SidebarNav } from "@/components/admin/sidebar-nav"
+import { headers } from "next/headers"
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Force dynamic rendering to ensure we get fresh data
+  headers()
+  
   const session = await auth()
 
   if (!session?.user) {

@@ -41,7 +41,7 @@ export const {
             try {
               await prisma.loginLog.create({
                 data: {
-                  userId: user?.id ?? 'unknown',
+                  userId: 'unknown', // Fixed: Removed accessing id from null user
                   success: false,
                   ipAddress: String(ipAddress),
                   userAgent: String(userAgent),
@@ -92,18 +92,26 @@ export const {
     signIn: '/auth/signin',
   },
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 0, // Force session update on every request
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id
+      }
+      // Update the token if the session was updated
+      if (trigger === "update" && session?.name) {
+        token.name = session.name
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
+        // Ensure name is always synced with token
+        session.user.name = token.name as string
       }
       return session
     }

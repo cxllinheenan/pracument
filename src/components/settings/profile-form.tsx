@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
+import { useSession } from "next-auth/react"
 
 interface ProfileFormProps {
   initialName: string | null
@@ -13,6 +14,7 @@ interface ProfileFormProps {
 
 export function ProfileForm({ initialName, userEmail }: ProfileFormProps) {
   const router = useRouter()
+  const { update: updateSession } = useSession()
   const [isLoading, setIsLoading] = useState(false)
   const [name, setName] = useState(initialName || "")
 
@@ -33,6 +35,9 @@ export function ProfileForm({ initialName, userEmail }: ProfileFormProps) {
         throw new Error("Failed to update profile")
       }
 
+      // Update the session with new name
+      await updateSession({ name })
+      
       toast.success("Profile updated successfully")
       router.refresh()
     } catch (error) {
