@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
+import { ProfileForm } from "@/components/settings/profile-form"
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -20,18 +21,10 @@ export default async function SettingsPage() {
         <div className="space-y-4">
           <div>
             <h4 className="text-sm font-medium">Your Profile</h4>
-            <div className="pt-4">
-              <div className="space-y-2">
-                <div>
-                  <p className="text-sm font-medium">Name</p>
-                  <p className="text-sm text-muted-foreground">{session.user.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Email</p>
-                  <p className="text-sm text-muted-foreground">{session.user.email}</p>
-                </div>
-              </div>
-            </div>
+            <ProfileForm 
+              initialName={session.user.name ?? null}
+              userEmail={session.user.email ?? null}
+            />
           </div>
         </div>
       </div>

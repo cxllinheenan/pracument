@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LogOut, Settings } from "lucide-react"
+import { Home, LogOut, Settings, FileText } from "lucide-react"
 import { SignOutButton } from "@/components/auth/signout-button"
 import {
   Sidebar,
@@ -43,6 +43,14 @@ export function SidebarNav({ user }: SidebarNavProps) {
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/admin/documents" className="w-full">
+              <SidebarMenuButton isActive={pathname === '/admin/documents'} tooltip="Documents">
+                <FileText className="h-4 w-4" />
+                <span>Documents</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="border-t border-border/5">
@@ -56,16 +64,13 @@ export function SidebarNav({ user }: SidebarNavProps) {
             </Link>
           </div>
           <div className="flex items-center justify-between p-4 border-t border-border/5">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-primary/10" />
-              <div className="space-y-1">
-                <p className="text-sm font-medium leading-none">
-                  {user.name || user.email}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {user.email}
-                </p>
-              </div>
+            <div className="flex flex-col">
+              <p className="text-sm font-medium leading-none">
+                {user.name || user.email}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {user.email}
+              </p>
             </div>
             <SignOutButton variant="ghost" size="icon">
               <LogOut className="h-4 w-4" />
