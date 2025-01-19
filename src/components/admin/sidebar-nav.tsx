@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LogOut, Settings, FileText } from "lucide-react"
+import { Home, LogOut, Settings, FileText, MessageSquare } from "lucide-react"
 import { SignOutButton } from "@/components/auth/signout-button"
 import {
   Sidebar,
@@ -48,6 +48,14 @@ export function SidebarNav({ user }: SidebarNavProps) {
               <SidebarMenuButton isActive={pathname === '/admin/documents'} tooltip="Documents">
                 <FileText className="h-4 w-4" />
                 <span>Documents</span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/admin/chat" className="w-full">
+              <SidebarMenuButton isActive={pathname === '/admin/chat'} tooltip="Chat">
+                <MessageSquare className="h-4 w-4" />
+                <span>Chat</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>

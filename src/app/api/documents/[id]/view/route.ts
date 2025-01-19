@@ -17,6 +17,7 @@ export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const { id } = await params // Await params
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -26,7 +27,7 @@ export async function GET(
     // Get document from database
     const document = await prisma.document.findUnique({
       where: {
-        id: params.id,
+        id: id, // Use extracted id
         userId: session.user.id // Ensure user owns the document
       }
     })
