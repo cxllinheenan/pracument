@@ -5,6 +5,24 @@ import { Input } from "@/components/ui/input"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { toast } from "sonner"
+
+const validatePassword = (password: string) => {
+  const minLength = 8
+  const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/
+
+  const errors = []
+  
+  if (password.length < minLength) {
+    errors.push(`Password must be at least ${minLength} characters long`)
+  }
+  
+  if (!specialCharRegex.test(password)) {
+    errors.push("Password must contain at least one special character")
+  }
+
+  return errors
+}
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
@@ -17,6 +35,16 @@ export default function SignUp() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    
+    // Validate password
+    const passwordErrors = validatePassword(formData.password)
+    if (passwordErrors.length > 0) {
+      passwordErrors.forEach(error => {
+        toast.error(error)
+      })
+      return
+    }
+
     try {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
@@ -32,10 +60,12 @@ export default function SignUp() {
         throw new Error(data.error || 'Something went wrong')
       }
 
+      toast.success("Account created successfully!")
       router.push('/auth/signin')
     } catch (error) {
       if (error instanceof Error) {
         setError(error.message)
+        toast.error(error.message)
       }
     }
   }
@@ -72,13 +102,18 @@ export default function SignUp() {
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               required
             />
-            <Input
-              type="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              required
-            />
+            <div className="space-y-2">
+              <Input
+                type="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Password must be at least 8 characters long and contain at least one special character.
+              </p>
+            </div>
           </div>
 
           <Button type="submit" className="w-full">

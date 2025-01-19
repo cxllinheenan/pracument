@@ -32,17 +32,20 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model User {
   id            String    @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String    @unique
   password      String
   emailVerified DateTime?
   image         String?
   accounts      Account[]
   sessions      Session[]
+  loginLogs     LoginLog[]
 }
 
 model VerificationToken {
@@ -51,4 +54,17 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model LoginLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timestamp DateTime @default(now())
+  success   Boolean
+  ipAddress String?
+  userAgent String?  @db.Text
+
+  @@index([userId])
+  @@index([timestamp])
 } 
