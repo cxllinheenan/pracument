@@ -1,8 +1,15 @@
-"use client"
 import { Card } from "@/components/ui/card"
 import { FileText } from "lucide-react"
+import { auth } from "@/auth"
+import { redirect } from "next/navigation"
 
-export default function ChatPage() {
+export default async function ChatPage() {
+  const session = await auth()
+
+  if (!session?.user) {
+    redirect('/auth/signin')
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

@@ -4,9 +4,28 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { formatDistanceToNow } from "date-fns"
-import { FileIcon, Loader2, X, Upload, FileText, Trash2 } from "lucide-react"
+import { 
+  FileIcon, 
+  Loader2, 
+  X, 
+  Upload, 
+  FileText, 
+  Trash2, 
+  FolderPlus, 
+  ChevronRight,
+  Folder,
+  ArrowUpRight
+} from "lucide-react"
 import { DocumentViewer } from "@/components/document-viewer"
 import { Card } from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +37,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { auth } from "@/auth"
+import { redirect } from "next/navigation"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 interface Document {
   id: string
@@ -26,35 +55,57 @@ interface Document {
   type: string
   createdAt: string
   url: string
+  folderId: string | null
+}
+
+interface Folder {
+  id: string
+  name: string
+  createdAt: string
+  parentId: string | null
 }
 
 export default function DocumentsPage() {
   const [isUploading, setIsUploading] = useState(false)
   const [documents, setDocuments] = useState<Document[]>([])
+  const [folders, setFolders] = useState<Folder[]>([])
+  const [currentFolder, setCurrentFolder] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState("")
 
   // Fetch user's documents
   useEffect(() => {
-    async function fetchDocuments() {
+    async function fetchData() {
       try {
-        const response = await fetch("/api/documents")
-        if (!response.ok) throw new Error("Failed to fetch documents")
-        const data = await response.json()
-        setDocuments(data.documents)
-        // Check each document's existence
-        data.documents.forEach((doc: Document) => checkFileExists(doc.id))
+        const [docsResponse, foldersResponse] = await Promise.all([
+          fetch(`/api/documents${currentFolder ? `?folderId=${currentFolder}` : ''}`),
+          fetch("/api/folders")
+        ])
+
+        if (!docsResponse.ok || !foldersResponse.ok) 
+          throw new Error("Failed to fetch data")
+
+        const docsData = await docsResponse.json()
+        const foldersData = await foldersResponse.json()
+
+        setDocuments(docsData.documents)
+        setFolders(foldersData.folders)
+        
+        // Check documents existence
+        docsData.documents.forEach((doc: Document) => checkFileExists(doc.id))
       } catch (error) {
-        console.error("Error fetching documents:", error)
-        toast.error("Failed to load documents")
+        console.error("Error fetching data:", error)
+        toast.error("Failed to load data")
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchDocuments()
-  }, [])
+    fetchData()
+  }, [currentFolder])
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -62,28 +113,43 @@ export default function DocumentsPage() {
 
     setIsUploading(true)
     const formData = new FormData()
-    formData.append("file", file)
+    formData.append('file', file)
+    if (currentFolder) {
+      formData.append('folderId', currentFolder)
+    }
 
     try {
-      const response = await fetch("/api/documents/upload", {
-        method: "POST",
+      const response = await fetch('/api/documents/upload', {
+        method: 'POST',
         body: formData,
       })
 
-      const result = await response.json()
+      if (!response.ok) throw new Error('Upload failed')
 
-      if (!response.ok) {
-        throw new Error(result.error || "Upload failed")
+      const { document } = await response.json()
+      
+      // Only update documents list if we're in the correct folder view
+      if (document.folderId === currentFolder) {
+        setDocuments(prev => [{
+          id: document.id,
+          name: document.name,
+          size: document.size,
+          type: document.type,
+          createdAt: document.createdAt,
+          url: document.url,
+          folderId: document.folderId
+        }, ...prev])
       }
-
-      // Add the new document to the list
-      setDocuments(prev => [result.document, ...prev])
-      toast.success("Document uploaded successfully")
+      
+      toast.success('Document uploaded successfully')
     } catch (error) {
-      console.error("Upload error:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to upload document")
+      console.error('Upload error:', error)
+      toast.error('Failed to upload document')
     } finally {
       setIsUploading(false)
+      if (e.target) {
+        e.target.value = ''
+      }
     }
   }
 
@@ -137,6 +203,39 @@ export default function DocumentsPage() {
     }
   }
 
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return
+
+    try {
+      const response = await fetch("/api/folders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: newFolderName,
+          parentId: currentFolder,
+        }),
+      })
+
+      if (!response.ok) throw new Error("Failed to create folder")
+
+      const folder = await response.json()
+      setFolders(prev => [...prev, folder])
+      setNewFolderName("")
+      setIsCreatingFolder(false)
+      toast.success("Folder created successfully")
+    } catch (error) {
+      console.error("Create folder error:", error)
+      toast.error("Failed to create folder")
+    }
+  }
+
+  const handleNavigateFolder = (folderId: string | null) => {
+    setCurrentFolder(folderId)
+    setSelectedDocument(null)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -147,6 +246,14 @@ export default function DocumentsPage() {
           </p>
         </div>
         <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={() => setIsCreatingFolder(true)}
+            className="gap-2"
+          >
+            <FolderPlus className="h-4 w-4" />
+            New Folder
+          </Button>
           <div className="relative">
             <Input
               type="file"
@@ -169,103 +276,181 @@ export default function DocumentsPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr),600px] items-start">
-        <Card className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <FileText className="h-5 w-5 text-muted-foreground" />
-            <h3 className="font-semibold">Document List</h3>
-          </div>
-          
-          <div className="space-y-4">
-            {isLoading ? (
-              <div className="flex items-center justify-center p-8">
-                <Loader2 className="h-6 w-6 animate-spin" />
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Button
+          variant="ghost"
+          className="h-auto p-0 font-medium"
+          onClick={() => handleNavigateFolder(null)}
+        >
+          Documents
+        </Button>
+        {currentFolder && folders.find(f => f.id === currentFolder) && (
+          <>
+            <ChevronRight className="h-4 w-4" />
+            <span className="font-medium">
+              {folders.find(f => f.id === currentFolder)?.name}
+            </span>
+          </>
+        )}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+        <div className="space-y-6">
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Folder className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-semibold">Folders</h3>
               </div>
-            ) : documents.length > 0 ? (
-              <div className="divide-y">
-                {documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className={`flex items-center justify-between py-4 px-2 hover:bg-muted/50 transition-colors cursor-pointer rounded-md ${
-                      selectedDocument?.id === doc.id ? "bg-muted" : ""
-                    }`}
-                    onClick={() => setSelectedDocument(doc)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 rounded-md bg-primary/10">
-                        <FileIcon className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium line-clamp-1">{doc.name}</p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{formatFileSize(doc.size)}</span>
-                          <span>•</span>
-                          <span>{formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          window.open(doc.url, '_blank')
-                        }}
-                      >
-                        <FileIcon className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="w-[100px]">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                    </TableCell>
+                  </TableRow>
+                ) : folders.filter(folder => folder.parentId === currentFolder).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                      No folders found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  folders
+                    .filter(folder => folder.parentId === currentFolder)
+                    .map((folder) => (
+                      <TableRow key={folder.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Folder className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{folder.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDistanceToNow(new Date(folder.createdAt), { addSuffix: true })}
+                        </TableCell>
+                        <TableCell>
                           <Button
                             variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-destructive"
-                            disabled={isDeleting === doc.id}
+                            size="sm"
+                            onClick={() => handleNavigateFolder(folder.id)}
                           >
-                            {isDeleting === doc.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-4 w-4" />
-                            )}
+                            <ArrowUpRight className="h-4 w-4" />
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Document</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete this document? This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(doc.id)}
-                              className="bg-destructive hover:bg-destructive/90"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground font-medium">No documents found</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Upload your first document to get started
-                </p>
-              </div>
-            )}
-          </div>
-        </Card>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                )}
+              </TableBody>
+            </Table>
+          </Card>
 
-        {selectedDocument && (
-          <Card className="p-6 lg:sticky lg:top-6 h-[650px] overflow-hidden">
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-semibold">Documents</h3>
+              </div>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Size</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                    </TableCell>
+                  </TableRow>
+                ) : documents.filter(doc => doc.folderId === currentFolder).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      No documents found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  documents
+                    .filter(doc => doc.folderId === currentFolder)
+                    .map((doc) => (
+                      <TableRow 
+                        key={doc.id}
+                        className={selectedDocument?.id === doc.id ? "bg-muted/50" : ""}
+                      >
+                        <TableCell>
+                          <div 
+                            className="flex items-center gap-2 cursor-pointer"
+                            onClick={() => setSelectedDocument(doc)}
+                          >
+                            <FileIcon className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{doc.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatFileSize(doc.size)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}
+                        </TableCell>
+                        <TableCell>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive"
+                                disabled={isDeleting === doc.id}
+                              >
+                                {isDeleting === doc.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this document? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(doc.id)}
+                                  className="bg-destructive hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </div>
+
+        {selectedDocument ? (
+          <Card className="p-6 lg:sticky lg:top-6 h-[calc(100vh-10rem)] overflow-hidden">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-muted-foreground" />
@@ -287,8 +472,40 @@ export default function DocumentsPage() {
               />
             </div>
           </Card>
+        ) : (
+          <Card className="p-6 lg:sticky lg:top-6 h-[calc(100vh-10rem)] flex items-center justify-center text-muted-foreground">
+            Select a document to preview
+          </Card>
         )}
       </div>
+
+      <Dialog open={isCreatingFolder} onOpenChange={setIsCreatingFolder}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Folder</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Folder Name</Label>
+              <Input
+                id="name"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="Enter folder name..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreatingFolder(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCreateFolder}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
