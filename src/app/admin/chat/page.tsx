@@ -1,7 +1,6 @@
-import { Card } from "@/components/ui/card"
-import { FileText } from "lucide-react"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
+import { ChatUI } from "@/components/chat/chat-ui"
 
 export default async function ChatPage() {
   const session = await auth()
@@ -21,15 +20,7 @@ export default async function ChatPage() {
         </div>
       </div>
 
-      <Card className="p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <FileText className="h-5 w-5 text-muted-foreground" />
-          <h3 className="font-semibold">Coming Soon</h3>
-        </div>
-        <p className="text-muted-foreground">
-          Document chat functionality will be available soon.
-        </p>
-      </Card>
+      <ChatUI />
     </div>
   )
 } 
