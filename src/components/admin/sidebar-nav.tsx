@@ -3,6 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
+import { useState } from "react"
 import { 
   Home, 
   LogOut, 
@@ -12,6 +13,8 @@ import {
   Briefcase,
   ChevronRight,
   User,
+  CheckSquare,
+  ChevronDown,
 } from "lucide-react"
 import { SignOutButton } from "@/components/auth/signout-button"
 import {
@@ -24,6 +27,11 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 
@@ -42,14 +50,17 @@ const mainNavItems = [
     icon: Home,
   },
   {
-    title: "Cases",
-    href: "/admin/cases",
-    icon: Briefcase,
-  },
-  {
     title: "Documents",
     href: "/admin/documents",
     icon: FileText,
+  },
+]
+
+const caseNavItems = [
+  {
+    title: "Tasks",
+    href: "/admin/tasks",
+    icon: CheckSquare,
   },
 ]
 
@@ -63,6 +74,7 @@ const aiItems = [
 
 export function SidebarNav({ user }: SidebarNavProps) {
   const pathname = usePathname()
+  const [isOpen, setIsOpen] = useState(true)
 
   const getInitials = (name: string) => {
     return name
@@ -130,6 +142,43 @@ export function SidebarNav({ user }: SidebarNavProps) {
                   </Link>
                 </SidebarMenuItem>
               ))}
+
+              <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+                <CollapsibleTrigger asChild>
+                  <Link href="/admin/cases" className="w-full">
+                    <SidebarMenuButton 
+                      isActive={pathname === '/admin/cases'}
+                      className="w-full justify-between"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Briefcase className="h-4 w-4" />
+                        <span>Cases</span>
+                      </span>
+                      <ChevronDown className={cn(
+                        "h-4 w-4 transition-transform duration-200",
+                        isOpen && "rotate-180"
+                      )} />
+                    </SidebarMenuButton>
+                  </Link>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pl-6">
+                  {caseNavItems.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                      <Link href={item.href} className="w-full">
+                        <SidebarMenuButton 
+                          isActive={pathname === item.href}
+                          className="w-full justify-between"
+                        >
+                          <span className="flex items-center gap-2">
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                          </span>
+                        </SidebarMenuButton>
+                      </Link>
+                    </SidebarMenuItem>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
             </SidebarMenu>
           </div>
 

@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { formatDistanceToNow } from "date-fns"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -15,4 +16,11 @@ export function formatBytes(bytes: number, decimals: number = 2) {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
 
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+}
+
+export function formatTimeToNow(date: Date | string) {
+  return formatDistanceToNow(new Date(date), {
+    addSuffix: true,
+    includeSeconds: false
+  })
 }
