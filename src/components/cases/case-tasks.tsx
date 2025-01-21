@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
-import { CheckCircle2, Circle, Clock } from "lucide-react"
+import { CheckCircle2, Circle, Clock, Trash2 } from "lucide-react"
 
 interface CaseTasksProps {
   caseId: string
@@ -72,6 +72,21 @@ export function CaseTasks({ caseId, tasks }: CaseTasksProps) {
     } catch (error) {
       console.error("[TASK_UPDATE_ERROR]", error)
       toast.error(error instanceof Error ? error.message : "Failed to update task")
+    }
+  }
+
+  async function deleteTask(taskId: string) {
+    try {
+      const response = await fetch(`/api/cases/${caseId}/tasks/${taskId}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) throw new Error("Failed to delete task")
+
+      router.refresh()
+      toast.success("Task deleted successfully")
+    } catch (error) {
+      toast.error("Failed to delete task")
     }
   }
 
@@ -149,6 +164,14 @@ export function CaseTasks({ caseId, tasks }: CaseTasksProps) {
                     Added {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
                   </p>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => deleteTask(task.id)}
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </CardContent>
           </Card>

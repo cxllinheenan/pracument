@@ -87,4 +87,36 @@ export async function PATCH(
     }
     return new NextResponse("Internal Error", { status: 500 })
   }
+}
+
+export async function DELETE(
+  request: Request,
+  context: RouteContext
+) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return new NextResponse("Unauthorized", { status: 401 })
+    }
+
+    const resolvedParams = await context.params
+    const { caseId, taskId } = resolvedParams
+
+    if (!caseId || !taskId) {
+      return new NextResponse("Invalid parameters", { status: 400 })
+    }
+
+    await prisma.task.delete({
+      where: {
+        id: taskId,
+        caseId,
+        userId: session.user.id,
+      },
+    })
+
+    return new NextResponse(null, { status: 204 })
+  } catch (error) {
+    console.error("[TASK_DELETE_ERROR]", error)
+    return new NextResponse("Internal Error", { status: 500 })
+  }
 } 

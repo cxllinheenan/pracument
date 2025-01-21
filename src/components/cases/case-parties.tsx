@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
+import { Trash2 } from "lucide-react"
 
 interface CasePartiesProps {
   caseId: string
@@ -59,6 +60,21 @@ export function CaseParties({ caseId, parties }: CasePartiesProps) {
       toast.error("Failed to add party")
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function deleteParty(partyId: string) {
+    try {
+      const response = await fetch(`/api/cases/${caseId}/parties/${partyId}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) throw new Error("Failed to delete party")
+
+      router.refresh()
+      toast.success("Party deleted successfully")
+    } catch (error) {
+      toast.error("Failed to delete party")
     }
   }
 
@@ -155,6 +171,14 @@ export function CaseParties({ caseId, parties }: CasePartiesProps) {
                     </p>
                   )}
                 </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => deleteParty(party.id)}
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </CardContent>
           </Card>
