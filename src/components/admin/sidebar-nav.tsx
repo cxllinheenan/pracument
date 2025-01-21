@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { 
   Home, 
@@ -11,7 +12,6 @@ import {
   Briefcase,
   ChevronRight,
   User,
-  Bell
 } from "lucide-react"
 import { SignOutButton } from "@/components/auth/signout-button"
 import {
@@ -25,7 +25,6 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 interface SidebarNavProps {
@@ -41,34 +40,24 @@ const mainNavItems = [
     title: "Dashboard",
     href: "/admin",
     icon: Home,
-    badge: null,
   },
   {
     title: "Cases",
     href: "/admin/cases",
     icon: Briefcase,
-    badge: "New",
   },
   {
     title: "Documents",
     href: "/admin/documents",
     icon: FileText,
-    badge: null,
   },
 ]
 
-const communicationItems = [
+const aiItems = [
   {
     title: "Chat",
     href: "/admin/chat",
     icon: MessageSquare,
-    badge: "3",
-  },
-  {
-    title: "Notifications",
-    href: "/admin/notifications",
-    icon: Bell,
-    badge: "5",
   },
 ]
 
@@ -86,9 +75,17 @@ export function SidebarNav({ user }: SidebarNavProps) {
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-border/5">
-        <div className="flex h-16 items-center gap-4 px-4">
+        <div className="flex h-16 items-center gap-2 px-4">
+          <div className="relative h-8 w-8">
+            <Image
+              src="/images/logo.png"
+              alt="Pracument Logo"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
           <div className="flex items-center gap-2">
-            <Briefcase className="h-6 w-6" />
             <span className="text-xl font-bold">Pracument</span>
           </div>
           <SidebarTrigger className="ml-auto md:hidden" />
@@ -129,11 +126,6 @@ export function SidebarNav({ user }: SidebarNavProps) {
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
                       </span>
-                      {item.badge && (
-                        <Badge variant="secondary" className="ml-auto">
-                          {item.badge}
-                        </Badge>
-                      )}
                     </SidebarMenuButton>
                   </Link>
                 </SidebarMenuItem>
@@ -143,10 +135,10 @@ export function SidebarNav({ user }: SidebarNavProps) {
 
           <div className="px-3 py-2">
             <h2 className="mb-2 px-2 text-xs font-semibold tracking-tight text-muted-foreground">
-              Communication
+              AI
             </h2>
             <SidebarMenu>
-              {communicationItems.map((item) => (
+              {aiItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <Link href={item.href} className="w-full">
                     <SidebarMenuButton 
@@ -157,14 +149,6 @@ export function SidebarNav({ user }: SidebarNavProps) {
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
                       </span>
-                      {item.badge && (
-                        <Badge 
-                          variant={item.href === '/admin/chat' ? 'default' : 'secondary'}
-                          className="ml-auto"
-                        >
-                          {item.badge}
-                        </Badge>
-                      )}
                     </SidebarMenuButton>
                   </Link>
                 </SidebarMenuItem>
