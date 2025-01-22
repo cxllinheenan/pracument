@@ -18,19 +18,68 @@ export async function POST(req: Request) {
       return new Response("Unauthorized", { status: 401 })
     }
 
-    const { messages } = await req.json()
+    const { messages, caseId, documentIds } = await req.json()
+
+    // Fetch context from the separate API route
+    let contextPrompt = ''
+    if (caseId || documentIds?.length) {
+      const params = new URLSearchParams()
+      if (caseId) params.set('caseId', caseId)
+      if (documentIds?.length) params.set('documentIds', documentIds.join(','))
+      
+      // Forward the auth cookie
+      const contextRes = await fetch(`${req.headers.get('origin')}/api/chat/context?${params}`, {
+        headers: {
+          cookie: req.headers.get('cookie') || '',
+        }
+      })
+
+      if (contextRes.ok) {
+        const { contextPrompt: fetchedContext } = await contextRes.json()
+        contextPrompt = fetchedContext
+      } else {
+        console.error('Context fetch failed:', await contextRes.text())
+      }
+    }
 
     const result = streamText({
       model: deepseek('deepseek-chat'),
       messages: [
         {
           role: "system",
-          content: "You are a helpful legal assistant. You help lawyers and legal professionals with their document management and legal research needs. Provide clear, accurate, and professional responses."
+          content: `You are pracument AI, a proprietary AI system built on top of the legal document and case management platform Pracument.
+
+${contextPrompt}
+
+Your primary function is to assist users with legal-oriented tasks, including:
+
+Document Drafting & Editing
+- Generate, review, and refine legal documents, contracts, and pleadings
+- Offer structured outlines and best-practice suggestions
+
+Case Analysis & Summaries
+- Analyze case details, relevant statutes, and judicial decisions
+- Provide concise and actionable summaries
+
+Research & Citation
+- Identify relevant legal authorities and precedents
+- Suggest proper citations and references
+
+Process Explanation & Guidance
+- Clarify procedural steps and requirements
+- Offer step-by-step guidance
+
+Remember:
+- You are not a substitute for professional legal counsel
+- Maintain accuracy and clarity in responses
+- Treat all information with confidentiality
+- Keep a professional and neutral tone
+- Clearly communicate any limitations`
         },
         ...messages
       ],
       temperature: 0.7,
-      maxTokens: 500,
+      maxTokens: 1000,
     })
 
     // Return a data stream response that can be consumed by the client

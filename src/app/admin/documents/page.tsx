@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
@@ -14,9 +14,14 @@ import {
   FolderPlus, 
   ChevronRight,
   Folder,
-  ArrowUpRight
+  ArrowUpRight,
+  Search,
+  Plus,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight
 } from "lucide-react"
-import { DocumentViewer } from "@/components/document-viewer"
 import { Card } from "@/components/ui/card"
 import {
   Table,
@@ -47,6 +52,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
+import { formatFileSize } from "@/lib/utils"
 
 interface Document {
   id: string
@@ -65,16 +82,432 @@ interface Folder {
   parentId: string | null
 }
 
+interface FolderTableProps {
+  data: Folder[]
+  onNavigate: (folderId: string) => void
+}
+
+interface DocumentTableProps {
+  data: Document[]
+  onSelect: (doc: Document) => void
+  onDelete: (docId: string) => void
+  isDeleting?: string | null
+}
+
+const FoldersTable = ({ data, onNavigate }: FolderTableProps) => {
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+
+  const columns = useMemo<ColumnDef<Folder>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            >
+              Name
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          )
+        },
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            <Folder className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{row.getValue("name")}</span>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "createdAt",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            >
+              Created
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          )
+        },
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {formatDistanceToNow(new Date(row.getValue("createdAt")), { addSuffix: true })}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        cell: ({ row }) => (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onNavigate(row.original.id)}
+          >
+            <ArrowUpRight className="h-4 w-4" />
+          </Button>
+        ),
+      },
+    ],
+    [onNavigate]
+  )
+
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    state: {
+      sorting,
+      columnFilters,
+    },
+  })
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Filter folders..."
+          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+          onChange={(event) =>
+            table.getColumn("name")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-32">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <Folder className="h-8 w-8 text-muted-foreground/30" />
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      No folders found
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex items-center justify-between space-x-2 py-4">
+        <div className="flex-1 text-sm text-muted-foreground">
+          {table.getFilteredRowModel().rows.length} folder(s) total.
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const DocumentsTable = ({ data, onSelect, onDelete, isDeleting }: DocumentTableProps) => {
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+
+  const columns = useMemo<ColumnDef<Document>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            >
+              Name
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          )
+        },
+        cell: ({ row }) => (
+          <div 
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => onSelect(row.original)}
+          >
+            <FileIcon className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium">{row.getValue("name")}</span>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "size",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            >
+              Size
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          )
+        },
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {formatFileSize(row.getValue("size"))}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "createdAt",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            >
+              Created
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          )
+        },
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {formatDistanceToNow(new Date(row.getValue("createdAt")), { addSuffix: true })}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        cell: ({ row }) => (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive"
+                disabled={isDeleting === row.original.id}
+              >
+                {isDeleting === row.original.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this document? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => onDelete(row.original.id)}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ),
+      },
+    ],
+    [onSelect, onDelete, isDeleting]
+  )
+
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    state: {
+      sorting,
+      columnFilters,
+    },
+  })
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Filter documents..."
+          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+          onChange={(event) =>
+            table.getColumn("name")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow 
+                  key={row.id}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-32">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <FileText className="h-8 w-8 text-muted-foreground/30" />
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      No documents found
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex items-center justify-between space-x-2 py-4">
+        <div className="flex-1 text-sm text-muted-foreground">
+          {table.getFilteredRowModel().rows.length} document(s) total.
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DocumentsPage() {
   const [isUploading, setIsUploading] = useState(false)
   const [documents, setDocuments] = useState<Document[]>([])
   const [folders, setFolders] = useState<Folder[]>([])
   const [currentFolder, setCurrentFolder] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
-  const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const [isCreatingFolder, setIsCreatingFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [isDeleting, setIsDeleting] = useState<string | null>(null)
 
   // Fetch user's documents
   useEffect(() => {
@@ -153,18 +586,6 @@ export default function DocumentsPage() {
     }
   }
 
-  // Format file size
-  const formatFileSize = (bytes: number) => {
-    const units = ['B', 'KB', 'MB', 'GB']
-    let size = bytes
-    let unitIndex = 0
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024
-      unitIndex++
-    }
-    return `${size.toFixed(1)} ${units[unitIndex]}`
-  }
-
   // Add this function to check if file exists in bucket
   const checkFileExists = async (documentId: string) => {
     try {
@@ -191,9 +612,6 @@ export default function DocumentsPage() {
       if (!response.ok) throw new Error("Failed to delete document")
       
       setDocuments(prev => prev.filter(doc => doc.id !== documentId))
-      if (selectedDocument?.id === documentId) {
-        setSelectedDocument(null)
-      }
       toast.success("Document deleted successfully")
     } catch (error) {
       console.error("Delete error:", error)
@@ -233,252 +651,126 @@ export default function DocumentsPage() {
 
   const handleNavigateFolder = (folderId: string | null) => {
     setCurrentFolder(folderId)
-    setSelectedDocument(null)
   }
+
+  // Filter documents and folders based on search
+  const filteredFolders = folders
+    .filter(folder => folder.parentId === currentFolder)
+    .filter(folder => 
+      folder.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+
+  const filteredDocuments = documents
+    .filter(doc => doc.folderId === currentFolder)
+    .filter(doc =>
+      doc.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
 
   return (
     <div className="space-y-6">
+      {/* Header Section */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Documents</h2>
-          <p className="text-muted-foreground mt-2">
-            Manage and view your uploaded documents
+          <p className="text-muted-foreground">
+            Manage and organize your legal documents
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <Button
-            variant="outline"
             onClick={() => setIsCreatingFolder(true)}
+            variant="outline"
             className="gap-2"
           >
             <FolderPlus className="h-4 w-4" />
             New Folder
           </Button>
-          <div className="relative">
-            <Input
-              type="file"
-              id="file-upload"
-              onChange={handleFileUpload}
-              disabled={isUploading}
-              accept=".pdf,.doc,.docx"
-              className="hidden"
-            />
-            <label
-              htmlFor="file-upload"
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-md border bg-background hover:bg-accent cursor-pointer ${
-                isUploading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
+          <Button className="gap-2">
+            <label className="cursor-pointer flex items-center gap-2">
               <Upload className="h-4 w-4" />
-              {isUploading ? 'Uploading...' : 'Upload Document'}
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Button
-          variant="ghost"
-          className="h-auto p-0 font-medium"
-          onClick={() => handleNavigateFolder(null)}
-        >
-          Documents
-        </Button>
-        {currentFolder && folders.find(f => f.id === currentFolder) && (
-          <>
-            <ChevronRight className="h-4 w-4" />
-            <span className="font-medium">
-              {folders.find(f => f.id === currentFolder)?.name}
-            </span>
-          </>
-        )}
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
-        <div className="space-y-6">
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Folder className="h-5 w-5 text-muted-foreground" />
-                <h3 className="font-semibold">Folders</h3>
-              </div>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="w-[100px]">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                    </TableCell>
-                  </TableRow>
-                ) : folders.filter(folder => folder.parentId === currentFolder).length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                      No folders found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  folders
-                    .filter(folder => folder.parentId === currentFolder)
-                    .map((folder) => (
-                      <TableRow key={folder.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Folder className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{folder.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDistanceToNow(new Date(folder.createdAt), { addSuffix: true })}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleNavigateFolder(folder.id)}
-                          >
-                            <ArrowUpRight className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-muted-foreground" />
-                <h3 className="font-semibold">Documents</h3>
-              </div>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                    </TableCell>
-                  </TableRow>
-                ) : documents.filter(doc => doc.folderId === currentFolder).length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                      No documents found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  documents
-                    .filter(doc => doc.folderId === currentFolder)
-                    .map((doc) => (
-                      <TableRow 
-                        key={doc.id}
-                        className={selectedDocument?.id === doc.id ? "bg-muted/50" : ""}
-                      >
-                        <TableCell>
-                          <div 
-                            className="flex items-center gap-2 cursor-pointer"
-                            onClick={() => setSelectedDocument(doc)}
-                          >
-                            <FileIcon className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{doc.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatFileSize(doc.size)}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}
-                        </TableCell>
-                        <TableCell>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive"
-                                disabled={isDeleting === doc.id}
-                              >
-                                {isDeleting === doc.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Document</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete this document? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDelete(doc.id)}
-                                  className="bg-destructive hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-        </div>
-
-        {selectedDocument ? (
-          <Card className="p-6 lg:sticky lg:top-6 h-[calc(100vh-10rem)] overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-muted-foreground" />
-                <h3 className="font-semibold">Document Preview</h3>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSelectedDocument(null)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            <div className="h-[calc(100%-3rem)]">
-              <DocumentViewer
-                documentId={selectedDocument.id}
-                type={selectedDocument.type}
+              Upload
+              <Input
+                type="file"
+                className="hidden"
+                onChange={handleFileUpload}
+                disabled={isUploading}
               />
-            </div>
-          </Card>
-        ) : (
-          <Card className="p-6 lg:sticky lg:top-6 h-[calc(100vh-10rem)] flex items-center justify-center text-muted-foreground">
-            Select a document to preview
-          </Card>
-        )}
+            </label>
+          </Button>
+        </div>
       </div>
 
+      {/* Breadcrumb and Search Section */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Button
+            variant="ghost"
+            className="h-auto p-0 font-medium"
+            onClick={() => handleNavigateFolder(null)}
+          >
+            Documents
+          </Button>
+          {currentFolder && folders.find(f => f.id === currentFolder) && (
+            <>
+              <ChevronRight className="h-4 w-4" />
+              <span className="font-medium">
+                {folders.find(f => f.id === currentFolder)?.name}
+              </span>
+            </>
+          )}
+        </div>
+        <div className="relative w-64">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="grid grid-cols-2 gap-6">
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Folder className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">Folders</h3>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCreatingFolder(true)}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <FoldersTable 
+            data={filteredFolders} 
+            onNavigate={handleNavigateFolder} 
+          />
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">Documents</h3>
+            </div>
+          </div>
+          <DocumentsTable 
+            data={filteredDocuments}
+            onSelect={(doc) => {
+              window.location.href = `/admin/documents/${doc.id}`
+            }}
+            onDelete={handleDelete}
+            isDeleting={isDeleting}
+          />
+        </Card>
+      </div>
+
+      {/* Create Folder Dialog */}
       <Dialog open={isCreatingFolder} onOpenChange={setIsCreatingFolder}>
         <DialogContent>
           <DialogHeader>

@@ -1,4 +1,5 @@
 # Next.js Boilerplate 
+
 ## Table of Contents
 
 - [Next.js Boilerplate](#nextjs-boilerplate)
@@ -12,11 +13,19 @@
     - [Database Setup](#database-setup)
   - [Scripts](#scripts)
   - [Project Structure](#project-structure)
+  - [Roadmap](#roadmap)
   - [Contributing](#contributing)
   - [License](#license)
 
 ## Features
-
+Key features of this Next.js Boilerplate include:
+- Server-side rendering with dynamic routing
+- Authentication using NextAuth.js and Prisma
+- Database management powered by PostgreSQL
+- Fully integrated Tailwind CSS for styling
+- Radix UI components for accessible, high-quality UI
+- Lucide customizable icons
+- Prisma ORM for query generation and migrations
 
 ## Technologies
 
@@ -176,6 +185,10 @@ npx prisma migrate reset
 ├── tsconfig.json
 └── README.md
 ```
+
+## Roadmap
+
+For a detailed roadmap outlining new features, enhancements, and production deployment considerations, see [docs/roadmap.md](docs/roadmap.md).
 
 ## Contributing
 
