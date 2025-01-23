@@ -1,12 +1,17 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import { DocumentViewer } from "@/components/document-viewer"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { ArrowLeft, FileText } from "lucide-react"
-import Link from "next/link"
-import { formatFileSize } from "@/lib/utils"
+import { DocumentPageClient } from "./document-page-client"
+
+interface Document {
+  id: string
+  name: string
+  size: number
+  type: string
+  createdAt: string | Date
+  url: string | null
+  folderId: string | null
+}
 
 async function getDocument(documentId: string, userId: string) {
   const document = await prisma.document.findUnique({
@@ -34,7 +39,6 @@ export default async function DocumentPage({ params }: PageProps) {
     redirect('/auth/signin')
   }
 
-  // Await the params before using documentId
   const resolvedParams = await params
   const documentId = String(resolvedParams.documentId)
   
@@ -44,36 +48,7 @@ export default async function DocumentPage({ params }: PageProps) {
 
   try {
     const document = await getDocument(documentId, session.user.id)
-
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/admin/documents">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Documents
-              </Link>
-            </Button>
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">{document.name}</h2>
-              <p className="text-sm text-muted-foreground">
-                {formatFileSize(document.size)}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <Card className="p-6">
-          <div className="h-[calc(100vh-12rem)]">
-            <DocumentViewer
-              documentId={document.id}
-              type={document.type}
-            />
-          </div>
-        </Card>
-      </div>
-    )
+    return <DocumentPageClient document={document} />
   } catch (error) {
     console.error("[DOCUMENT_PAGE_ERROR]", error)
     redirect('/admin/documents')
