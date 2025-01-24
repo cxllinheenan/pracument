@@ -38,10 +38,7 @@ async function getCaseDetails(caseId: string, userId: string) {
   return case_
 }
 
-export default async function CaseDetailsPage({
-  params,
-  searchParams,
-}: PageProps) {
+export default async function CasePage({ params }: PageProps) {
   const session = await auth()
 
   if (!session?.user?.id) {
@@ -57,7 +54,11 @@ export default async function CaseDetailsPage({
 
   try {
     const case_ = await getCaseDetails(caseId, session.user.id)
-    return <CaseDetails case_={case_} />
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-6">
+        <CaseDetails case_={case_} />
+      </div>
+    )
   } catch (error) {
     console.error("[CASE_DETAILS_ERROR]", error)
     throw error

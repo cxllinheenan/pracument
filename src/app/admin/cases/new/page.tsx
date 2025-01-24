@@ -10,9 +10,19 @@ export default async function NewCasePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-6">Create New Case</h1>
-      <CaseForm />
+    <div className="flex-1 space-y-4 p-4 md:p-6">
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Create New Case</h2>
+          <p className="text-muted-foreground">
+            Enter the details for your new case
+          </p>
+        </div>
+      </div>
+
+      <div className="max-w-2xl">
+        <CaseForm />
+      </div>
     </div>
   )
 } 

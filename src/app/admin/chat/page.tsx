@@ -27,20 +27,18 @@ export default async function ChatPage() {
   const { cases, documents } = await getData(session.user.id)
 
   return (
-    <div className="h-[calc(100vh-65px)] flex flex-col">
-      {/* Fixed header */}
-      <div className="px-6 py-4 border-b">
-        <h2 className="text-3xl font-bold tracking-tight">Chat</h2>
-        <p className="text-muted-foreground mt-2">
-          Chat with your documents using AI
-        </p>
+    <div className="flex-1 space-y-4 p-4 md:p-6">
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Chat</h2>
+          <p className="text-muted-foreground">
+            Chat with your documents using AI
+          </p>
+        </div>
       </div>
 
-      {/* Chat container with fixed height */}
-      <div className="flex-1 p-6">
-        <div className="bg-background rounded-lg border h-full">
-          <EnhancedChat cases={cases} documents={documents} />
-        </div>
+      <div className="h-[calc(100vh-12rem)] rounded-lg border bg-background">
+        <EnhancedChat cases={cases} documents={documents} />
       </div>
     </div>
   )
