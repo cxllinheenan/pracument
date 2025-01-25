@@ -7,6 +7,7 @@ const CaseSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   status: z.enum(["ACTIVE", "PENDING", "CLOSED", "ARCHIVED"]).default("ACTIVE"),
+  clientId: z.string().optional(),
 })
 
 export async function POST(req: Request) {
@@ -19,10 +20,26 @@ export async function POST(req: Request) {
     const json = await req.json()
     const body = CaseSchema.parse(json)
 
+    if (body.clientId) {
+      const client = await prisma.client.findFirst({
+        where: {
+          id: body.clientId,
+          userId: session.user.id,
+        },
+      })
+
+      if (!client) {
+        return new NextResponse("Client not found", { status: 404 })
+      }
+    }
+
     const case_ = await prisma.case.create({
       data: {
-        ...body,
+        title: body.title,
+        description: body.description,
+        status: body.status,
         userId: session.user.id,
+        clientId: body.clientId,
       },
     })
 

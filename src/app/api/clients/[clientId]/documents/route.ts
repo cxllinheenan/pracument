@@ -87,8 +87,8 @@ export async function POST(
 }
 
 export async function DELETE(
-  req: Request,
-  { params }: { params: { clientId: string; documentId: string } }
+  request: Request,
+  context: RouteContext
 ) {
   try {
     const session = await auth()
@@ -96,17 +96,33 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
+    // Get clientId from params
+    const resolvedParams = await context.params
+    const clientId = String(resolvedParams.clientId)
+
+    // Get documentId from URL search params
+    const { searchParams } = new URL(request.url)
+    const documentId = searchParams.get('documentId')
+
+    if (!clientId || !documentId) {
+      return new NextResponse("Missing required parameters", { status: 400 })
+    }
+
+    // Delete the document
     await prisma.document.delete({
       where: {
-        id: params.documentId,
+        id: documentId,
         userId: session.user.id,
-        clientId: params.clientId,
+        clientId: clientId,
       },
     })
 
-    return new NextResponse(null, { status: 204 })
+    return new NextResponse(JSON.stringify({ success: true }), { status: 200 })
   } catch (error) {
     console.error("[CLIENT_DOCUMENT_DELETE]", error)
-    return new NextResponse("Internal Error", { status: 500 })
+    return new NextResponse(
+      JSON.stringify({ error: "Failed to delete document" }), 
+      { status: 500 }
+    )
   }
 } 

@@ -15,7 +15,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Case, Document } from "@prisma/client"
+import { Case, Document, Client } from "@prisma/client"
 import { 
   Send, 
   Bot, 
@@ -25,23 +25,40 @@ import {
   PanelRightOpen,
   RefreshCcw,
   XCircle,
-  Copy
+  Copy,
+  Settings
 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 
 interface EnhancedChatProps {
   cases?: Case[]
   documents?: Document[]
+  clients?: Client[]
+  initialClientId?: string
 }
 
-export function EnhancedChat({ cases = [], documents = [] }: EnhancedChatProps) {
+export function EnhancedChat({ 
+  cases = [], 
+  documents = [], 
+  clients = [],
+  initialClientId 
+}: EnhancedChatProps) {
   const [selectedCase, setSelectedCase] = useState<Case>()
   const [selectedDocuments, setSelectedDocuments] = useState<Document[]>([])
+  const [selectedClient, setSelectedClient] = useState<Client>()
+  
+  useEffect(() => {
+    if (initialClientId) {
+      const client = clients.find(c => c.id === initialClientId)
+      if (client) setSelectedClient(client)
+    }
+  }, [initialClientId, clients])
   
   const { messages, input, handleInputChange, handleSubmit, isLoading, error, reload } = useChat({
     id: 'legal-chat',
     body: {
       caseId: selectedCase?.id,
+      clientId: selectedClient?.id,
       documentIds: selectedDocuments?.map(d => d.id)
     },
     initialMessages: [
@@ -62,18 +79,16 @@ export function EnhancedChat({ cases = [], documents = [] }: EnhancedChatProps) 
   }, [messages])
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
+    <div className="relative flex flex-col h-full bg-background">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center gap-3">
           <div className="bg-primary/10 p-2 rounded-lg">
             <Bot className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-semibold">Pracument AI</h2>
-            <Badge variant="secondary" className="text-xs font-normal">
-              Legal Assistant
-            </Badge>
+            <p className="text-sm text-muted-foreground">Legal Assistant</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -82,71 +97,103 @@ export function EnhancedChat({ cases = [], documents = [] }: EnhancedChatProps) 
             size="icon"
             onClick={() => reload()}
             disabled={isLoading || messages.length <= 1}
-            className="h-8 w-8"
+            className="h-9 w-9"
           >
             <RefreshCcw className="h-4 w-4" />
           </Button>
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
-                <PanelRightOpen className="h-4 w-4" />
+                <Settings className="h-4 w-4" />
                 Context
-                {(selectedCase || selectedDocuments.length > 0) && (
+                {(selectedCase || selectedClient || selectedDocuments.length > 0) && (
                   <Badge variant="secondary" className="ml-2">
-                    {selectedDocuments.length + (selectedCase ? 1 : 0)}
+                    {selectedDocuments.length + (selectedCase ? 1 : 0) + (selectedClient ? 1 : 0)}
                   </Badge>
                 )}
               </Button>
             </SheetTrigger>
             <SheetContent>
               <SheetHeader>
-                <SheetTitle>Select Context</SheetTitle>
+                <SheetTitle>Chat Settings</SheetTitle>
               </SheetHeader>
               
               {/* Selected Context Display */}
-              {(selectedCase || selectedDocuments.length > 0) && (
+              {(selectedCase || selectedClient || selectedDocuments.length > 0) && (
                 <div className="mt-4 p-4 border rounded-lg space-y-2">
-                  <h4 className="text-sm font-medium text-muted-foreground">Selected Context</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground">Active Context</h4>
                   <div className="flex flex-wrap gap-2">
+                    {selectedClient && (
+                      <Badge variant="secondary" className="gap-1.5">
+                        <User className="h-3 w-3" />
+                        {selectedClient.name}
+                        <XCircle 
+                          className="h-3 w-3 ml-1 cursor-pointer hover:text-destructive" 
+                          onClick={() => setSelectedClient(undefined)}
+                        />
+                      </Badge>
+                    )}
                     {selectedCase && (
                       <Badge variant="secondary" className="gap-1.5">
                         <Briefcase className="h-3 w-3" />
                         {selectedCase.title}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4 ml-1 hover:bg-transparent"
+                        <XCircle 
+                          className="h-3 w-3 ml-1 cursor-pointer hover:text-destructive" 
                           onClick={() => setSelectedCase(undefined)}
-                        >
-                          <XCircle className="h-3 w-3" />
-                        </Button>
+                        />
                       </Badge>
                     )}
                     {selectedDocuments.map(doc => (
                       <Badge key={doc.id} variant="secondary" className="gap-1.5">
                         <FileText className="h-3 w-3" />
                         {doc.name}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4 ml-1 hover:bg-transparent"
+                        <XCircle 
+                          className="h-3 w-3 ml-1 cursor-pointer hover:text-destructive" 
                           onClick={() => setSelectedDocuments(prev => 
                             prev.filter(d => d.id !== doc.id)
                           )}
-                        >
-                          <XCircle className="h-3 w-3" />
-                        </Button>
+                        />
                       </Badge>
                     ))}
                   </div>
                 </div>
               )}
 
-              <Tabs defaultValue="cases" className="mt-4">
-                <TabsList className="grid w-full grid-cols-2">
+              <Tabs defaultValue="clients" className="mt-6">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="clients">Clients</TabsTrigger>
                   <TabsTrigger value="cases">Cases</TabsTrigger>
                   <TabsTrigger value="documents">Documents</TabsTrigger>
                 </TabsList>
+                
+                <TabsContent value="clients" className="mt-4 space-y-4">
+                  {clients?.length ? (
+                    clients.map(client => (
+                      <Button
+                        key={client.id}
+                        variant={selectedClient?.id === client.id ? "default" : "outline"}
+                        className="w-full justify-start gap-2"
+                        onClick={() => setSelectedClient(
+                          selectedClient?.id === client.id ? undefined : client
+                        )}
+                      >
+                        <User className="h-4 w-4" />
+                        <div className="flex-1 text-left">
+                          <div className="font-medium">{client.name}</div>
+                          {client.company && (
+                            <div className="text-xs text-muted-foreground">
+                              {client.company}
+                            </div>
+                          )}
+                        </div>
+                      </Button>
+                    ))
+                  ) : (
+                    <div className="text-sm text-muted-foreground text-center py-4">
+                      No clients available
+                    </div>
+                  )}
+                </TabsContent>
                 
                 <TabsContent value="cases" className="mt-4 space-y-4">
                   {cases?.length ? (
@@ -211,40 +258,22 @@ export function EnhancedChat({ cases = [], documents = [] }: EnhancedChatProps) 
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages Area */}
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-6"
       >
-        {/* Selected Context Display in Chat */}
-        {(selectedCase || selectedDocuments.length > 0) && (
-          <div className="flex flex-wrap gap-2 mb-4 p-3 bg-muted/50 rounded-lg">
-            {selectedCase && (
-              <Badge variant="secondary" className="gap-1.5">
-                <Briefcase className="h-3 w-3" />
-                {selectedCase.title}
-              </Badge>
-            )}
-            {selectedDocuments.map(doc => (
-              <Badge key={doc.id} variant="secondary" className="gap-1.5">
-                <FileText className="h-3 w-3" />
-                {doc.name}
-              </Badge>
-            ))}
-          </div>
-        )}
-
-        {messages.map((message) => (
+        {messages.map((message, index) => (
           <div
             key={message.id}
             className={cn(
-              "group flex items-start gap-3",
+              "group flex items-start gap-3 px-4",
               message.role === 'assistant' ? 'flex-row' : 'flex-row-reverse'
             )}
           >
             <div 
               className={cn(
-                "flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg",
+                "flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full",
                 message.role === 'assistant' 
                   ? "bg-primary/10 text-primary" 
                   : "bg-muted text-muted-foreground"
@@ -256,12 +285,15 @@ export function EnhancedChat({ cases = [], documents = [] }: EnhancedChatProps) 
                 <User className="h-4 w-4" />
               )}
             </div>
-            <div className="flex-1 space-y-2">
+            <div className={cn(
+              "flex flex-col gap-2 max-w-[80%]",
+              message.role === 'assistant' ? 'items-start' : 'items-end'
+            )}>
               <div className={cn(
-                "rounded-lg p-4",
+                "rounded-2xl px-4 py-2",
                 message.role === 'assistant' 
-                  ? "bg-muted/50" 
-                  : "bg-primary/5"
+                  ? "bg-muted" 
+                  : "bg-primary text-primary-foreground"
               )}>
                 <div className="prose prose-sm dark:prose-invert max-w-none">
                   <MemoizedMarkdown id={message.id} content={message.content} />
@@ -271,7 +303,13 @@ export function EnhancedChat({ cases = [], documents = [] }: EnhancedChatProps) 
                 variant="ghost" 
                 size="sm"
                 className="h-8 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => navigator.clipboard.writeText(message.content)}
+                onClick={() => {
+                  navigator.clipboard.writeText(message.content)
+                  toast({
+                    title: "Copied",
+                    description: "Message copied to clipboard"
+                  })
+                }}
               >
                 <Copy className="h-3 w-3 mr-1" />
                 Copy
@@ -281,23 +319,23 @@ export function EnhancedChat({ cases = [], documents = [] }: EnhancedChatProps) 
         ))}
         
         {isLoading && (
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-muted-foreground px-4">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary/10 border-t-primary" />
             <span>AI is thinking...</span>
           </div>
         )}
         
         {error && (
-          <div className="flex items-center gap-2 text-destructive text-sm p-2 rounded-lg bg-destructive/10">
+          <div className="flex items-center gap-2 text-destructive text-sm p-4 mx-4 rounded-lg bg-destructive/10">
             <XCircle className="h-4 w-4" />
             <p>An error occurred. Please try again.</p>
           </div>
         )}
       </div>
 
-      {/* Input */}
-      <div className="p-4 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <form onSubmit={handleSubmit} className="flex gap-2">
+      {/* Input Area */}
+      <div className="sticky bottom-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-4 md:p-6">
+        <form onSubmit={handleSubmit} className="flex gap-3 max-w-5xl mx-auto">
           <Textarea
             value={input}
             onChange={handleInputChange}
@@ -308,7 +346,7 @@ export function EnhancedChat({ cases = [], documents = [] }: EnhancedChatProps) 
                 ? "Ask about the selected documents..."
                 : "Type your message..."
             }
-            className="min-h-[60px] max-h-[180px]"
+            className="min-h-[56px] max-h-[200px] resize-none"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
@@ -319,11 +357,11 @@ export function EnhancedChat({ cases = [], documents = [] }: EnhancedChatProps) 
           <Button 
             type="submit" 
             size="icon"
-            className="h-[60px] w-[60px]"
+            className="h-[56px] w-[56px] shrink-0"
             disabled={isLoading || !input.trim()}
           >
             <Send className={cn(
-              "h-4 w-4",
+              "h-5 w-5",
               isLoading && "animate-pulse"
             )} />
           </Button>

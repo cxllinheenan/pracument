@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { EnhancedChat } from "@/components/chat/enhanced-chat"
 
 async function getData(userId: string) {
-  const [cases, documents] = await Promise.all([
+  const [cases, documents, clients] = await Promise.all([
     prisma.case.findMany({
       where: { userId },
       orderBy: { updatedAt: 'desc' }
@@ -12,10 +12,14 @@ async function getData(userId: string) {
     prisma.document.findMany({
       where: { userId },
       orderBy: { updatedAt: 'desc' }
+    }),
+    prisma.client.findMany({
+      where: { userId },
+      orderBy: { updatedAt: 'desc' }
     })
   ])
 
-  return { cases, documents }
+  return { cases, documents, clients }
 }
 
 export default async function ChatPage() {
@@ -24,22 +28,15 @@ export default async function ChatPage() {
     redirect('/auth/signin')
   }
 
-  const { cases, documents } = await getData(session.user.id)
+  const { cases, documents, clients } = await getData(session.user.id)
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-6">
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Chat</h2>
-          <p className="text-muted-foreground">
-            Chat with your documents using AI
-          </p>
-        </div>
-      </div>
-
-      <div className="h-[calc(100vh-12rem)] rounded-lg border bg-background">
-        <EnhancedChat cases={cases} documents={documents} />
-      </div>
+    <div className="absolute inset-y-0 right-0 left-[255px] -mt-[65px] pt-[65px]">
+      <EnhancedChat 
+        cases={cases} 
+        documents={documents} 
+        clients={clients}
+      />
     </div>
   )
 } 

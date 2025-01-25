@@ -18,27 +18,29 @@ export async function POST(req: Request) {
       return new Response("Unauthorized", { status: 401 })
     }
 
-    const { messages, caseId, documentIds } = await req.json()
+    const { messages, caseId, clientId, documentIds } = await req.json()
 
-    // Fetch context from the separate API route
+    // Build context URL with all parameters
+    const contextParams = new URLSearchParams()
+    if (caseId) contextParams.set('caseId', caseId)
+    if (clientId) contextParams.set('clientId', clientId)
+    if (documentIds?.length) contextParams.set('documentIds', documentIds.join(','))
+
+    // Fetch context if any parameters are present
     let contextPrompt = ''
-    if (caseId || documentIds?.length) {
-      const params = new URLSearchParams()
-      if (caseId) params.set('caseId', caseId)
-      if (documentIds?.length) params.set('documentIds', documentIds.join(','))
-      
-      // Forward the auth cookie
-      const contextRes = await fetch(`${req.headers.get('origin')}/api/chat/context?${params}`, {
-        headers: {
-          cookie: req.headers.get('cookie') || '',
+    if (contextParams.toString()) {
+      const contextRes = await fetch(
+        `${req.headers.get('origin')}/api/chat/context?${contextParams}`,
+        {
+          headers: {
+            cookie: req.headers.get('cookie') || '',
+          }
         }
-      })
+      )
 
       if (contextRes.ok) {
         const { contextPrompt: fetchedContext } = await contextRes.json()
         contextPrompt = fetchedContext
-      } else {
-        console.error('Context fetch failed:', await contextRes.text())
       }
     }
 
@@ -82,14 +84,9 @@ Remember:
       maxTokens: 1000,
     })
 
-    // Return a data stream response that can be consumed by the client
     return result.toDataStreamResponse()
 
   } catch (error) {
-    console.error("[CHAT_ERROR]", error)
-    return new Response(
-      error instanceof Error ? error.message : "Internal Server Error",
-      { status: 500 }
-    )
+    return new Response("Internal Server Error", { status: 500 })
   }
 } 
