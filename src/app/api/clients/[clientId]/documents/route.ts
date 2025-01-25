@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { NextResponse } from "next/server"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 import { prisma } from "@/lib/prisma"
+import { extractTextContent } from "@/lib/document-processing"
 
 const s3Client = new S3Client({
   region: "auto",
@@ -54,6 +55,9 @@ export async function POST(
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
+    // Extract text content if it's a PDF or DOCX
+    const textContent = await extractTextContent(file, buffer)
+
     // Generate unique filename
     const timestamp = Date.now()
     const fileName = `clients/${clientId}/${timestamp}-${file.name}`
@@ -74,6 +78,7 @@ export async function POST(
         size: buffer.length,
         type: file.type || "application/octet-stream",
         url: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com/pracument/${fileName}`,
+        textContent,
         userId: session.user.id,
         clientId
       }

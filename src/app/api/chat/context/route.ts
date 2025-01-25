@@ -97,25 +97,40 @@ Parties: ${case_.parties.map(p => `${p.name} (${p.type})`).join(', ')}
       }
     }
     
-    // Get documents context
+    // Get documents context with text content
     if (documentIds?.length) {
       const documents = await prisma.document.findMany({
         where: { 
           id: { in: documentIds },
           userId: session.user.id
+        },
+        select: {
+          name: true,
+          type: true,
+          textContent: true,
+          createdAt: true
         }
       })
 
       if (documents.length) {
-        contextPrompt += `Selected Documents Context:
-${documents.map(d => `- ${d.name} (${d.type})`).join('\n')}
+        contextPrompt += `Selected Documents Context:\n`
+        
+        for (const doc of documents) {
+          contextPrompt += `Document: ${doc.name} (${doc.type})
+Date: ${doc.createdAt.toISOString().split('T')[0]}
+${doc.textContent ? `Content:
+${doc.textContent.slice(0, 1000)}${doc.textContent.length > 1000 ? '...' : ''}
+` : 'No text content available'}
+-------------------
 `
+        }
       }
     }
 
     return NextResponse.json({ contextPrompt })
 
   } catch (error) {
+    console.error("[CHAT_CONTEXT]", error)
     return new NextResponse("Internal Error", { status: 500 })
   }
 } 

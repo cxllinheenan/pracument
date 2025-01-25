@@ -1,8 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -11,76 +25,108 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { User, Search, ArrowUpDown } from "lucide-react"
 import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  SortingState,
-  getSortedRowModel,
-  ColumnFiltersState,
-  getFilteredRowModel,
-  getPaginationRowModel,
-} from "@tanstack/react-table"
-
-interface Client {
-  id: string
-  name: string
-  email: string | null
-  _count: {
-    cases: number
-    documents: number
-  }
-}
+  Briefcase,
+  FileText,
+  User,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Building2,
+} from "lucide-react"
 
 interface ClientsTableProps {
-  data: Client[]
+  data: any[]
 }
 
 export function ClientsTable({ data }: ClientsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
 
-  const columns: ColumnDef<Client>[] = [
-    {
-      accessorKey: "name",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Name
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        )
+  const columns = useMemo<ColumnDef<any>[]>(
+    () => [
+      {
+        accessorKey: "name",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            >
+              Name
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          )
+        },
+        cell: ({ row }) => {
+          return (
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <span className="font-medium">{row.getValue("name")}</span>
+                {row.original.company && (
+                  <div className="text-sm text-muted-foreground">
+                    {row.original.company}
+                  </div>
+                )}
+              </div>
+              <Badge
+                variant={row.original.status === "ACTIVE" ? "default" : "secondary"}
+                className="ml-auto"
+              >
+                {row.original.status.toLowerCase()}
+              </Badge>
+            </div>
+          )
+        },
       },
-      cell: ({ row }) => {
-        return (
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <Link href={`/admin/clients/${row.original.id}`} className="hover:underline">
-              {row.getValue("name")}
-            </Link>
-          </div>
-        )
+      {
+        accessorKey: "email",
+        header: "Contact",
+        cell: ({ row }) => {
+          return (
+            <div className="flex flex-col text-sm">
+              {row.original.email && (
+                <a href={`mailto:${row.original.email}`} className="hover:underline">
+                  {row.original.email}
+                </a>
+              )}
+              {row.original.phone && (
+                <a href={`tel:${row.original.phone}`} className="text-muted-foreground hover:underline">
+                  {row.original.phone}
+                </a>
+              )}
+            </div>
+          )
+        },
       },
-    },
-    {
-      accessorKey: "email",
-      header: "Email",
-    },
-    {
-      accessorKey: "_count.cases",
-      header: "Active Cases",
-      cell: ({ row }) => {
-        return row.original._count.cases
+      {
+        id: "stats",
+        cell: ({ row }) => {
+          const counts = row.original._count
+          return (
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-blue-500" />
+                <span className="text-muted-foreground">
+                  {counts.cases} {counts.cases === 1 ? "case" : "cases"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-yellow-500" />
+                <span className="text-muted-foreground">
+                  {counts.documents} {counts.documents === 1 ? "document" : "documents"}
+                </span>
+              </div>
+            </div>
+          )
+        },
       },
-    },
-  ]
+    ],
+    []
+  )
 
   const table = useReactTable({
     data,
@@ -98,8 +144,8 @@ export function ClientsTable({ data }: ClientsTableProps) {
   })
 
   return (
-    <div>
-      <div className="flex items-center py-4">
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
         <Input
           placeholder="Filter clients..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
@@ -109,6 +155,7 @@ export function ClientsTable({ data }: ClientsTableProps) {
           className="max-w-sm"
         />
       </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -132,7 +179,12 @@ export function ClientsTable({ data }: ClientsTableProps) {
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                  className="cursor-pointer"
+                  onClick={() => window.location.href = `/admin/clients/${row.original.id}`}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(
@@ -155,6 +207,46 @@ export function ClientsTable({ data }: ClientsTableProps) {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      <div className="flex items-center justify-between space-x-2 py-4">
+        <div className="flex-1 text-sm text-muted-foreground">
+          {table.getFilteredRowModel().rows.length} client(s) total.
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   )

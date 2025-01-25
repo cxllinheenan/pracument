@@ -56,6 +56,18 @@ export default async function CasePage({ params }: PageProps) {
     const case_ = await getCaseDetails(caseId, session.user.id)
     return (
       <div className="flex-1 space-y-4 p-4 md:p-6">
+        <div className="flex items-center justify-between space-y-2">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">{case_.title}</h2>
+            <p className="text-sm text-muted-foreground">
+              Case #{case_.id} • {case_.status.toLowerCase()}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Your existing action buttons */}
+          </div>
+        </div>
+
         <CaseDetails case_={case_} />
       </div>
     )

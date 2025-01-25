@@ -2,6 +2,11 @@ import { auth } from "@/auth"
 import { NextResponse } from "next/server"
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
 import { prisma } from "@/lib/prisma"
+import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf"
+import { DocxLoader } from "@langchain/community/document_loaders/fs/docx"
+import { writeFile } from 'fs/promises'
+import { join } from 'path'
+import { tmpdir } from 'os'
 
 // Initialize S3 client with minimal configuration
 const s3Client = new S3Client({
@@ -13,6 +18,48 @@ const s3Client = new S3Client({
   },
   forcePathStyle: true // Add this for R2 compatibility
 })
+
+async function extractTextContent(file: File, buffer: Buffer): Promise<string | null> {
+  try {
+    // Create temporary file
+    const tempPath = join(tmpdir(), `${Date.now()}-${file.name}`)
+    await writeFile(tempPath, buffer)
+
+    let textContent: string | null = null
+
+    try {
+      if (file.type === 'application/pdf') {
+        // Handle PDF files
+        const loader = new PDFLoader(tempPath, {
+          splitPages: false,
+          parsedItemSeparator: "\n"
+        })
+        const docs = await loader.load()
+        textContent = docs[0].pageContent
+      } else if (
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || 
+        file.name.toLowerCase().endsWith('.docx')
+      ) {
+        // Handle DOCX files
+        const loader = new DocxLoader(tempPath)
+        const docs = await loader.load()
+        textContent = docs[0].pageContent
+      }
+    } catch (error) {
+      console.error("[TEXT_EXTRACTION_ERROR]", error)
+      // Return null but don't throw - allows upload to continue even if extraction fails
+      return null
+    } finally {
+      // Clean up temp file
+      await writeFile(tempPath, '') // Clear file contents
+    }
+
+    return textContent
+  } catch (error) {
+    console.error("[TEMP_FILE_ERROR]", error)
+    return null
+  }
+}
 
 export async function POST(req: Request) {
   // Handle CORS preflight
@@ -65,6 +112,9 @@ export async function POST(req: Request) {
       )
     }
 
+    // Extract text content if it's a PDF or DOCX
+    const textContent = await extractTextContent(file, buffer)
+
     // Generate a unique filename
     const timestamp = Date.now()
     const fileName = `${timestamp}-${file.name}`
@@ -78,14 +128,15 @@ export async function POST(req: Request) {
         ContentType: file.type || "application/octet-stream"
       }))
 
-      // Create document with proper folder association
+      // Create document with proper folder association and text content
       const document = await prisma.document.create({
         data: {
           name: file.name,
-          fileName: fileName,
+          fileName,
           size: buffer.length,
           type: file.type || "application/octet-stream",
           url: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com/pracument/${fileName}`,
+          textContent,
           user: {
             connect: {
               id: session.user.id
@@ -100,11 +151,10 @@ export async function POST(req: Request) {
           })
         },
         include: {
-          folder: true // Include folder information in the response
+          folder: true
         }
       })
 
-      // Return the complete document object
       return NextResponse.json({
         message: "File uploaded successfully",
         document: {
@@ -114,7 +164,8 @@ export async function POST(req: Request) {
           type: document.type,
           createdAt: document.createdAt,
           url: document.url,
-          folderId: document.folderId // Include the folder ID in response
+          folderId: document.folderId,
+          textContent: document.textContent
         }
       })
     } catch (error) {

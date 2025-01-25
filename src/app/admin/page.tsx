@@ -127,22 +127,28 @@ export default async function AdminPage() {
   const stats = await getDashboardStats(session.user.id)
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-6">
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
+    <div className="flex-1 space-y-6 p-4 md:p-6">
+      {/* Welcome Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+            <span className="bg-primary/10 text-primary px-2 py-1 rounded-md text-sm font-medium">
+              {session.user.name}
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground">
-            Welcome back, {session.user.name}
+            Here's what's happening with your cases and documents today.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild size="sm">
+          <Button size="sm" className="shadow-sm" asChild>
             <Link href="/admin/cases/new">
               <Briefcase className="mr-2 h-4 w-4" />
               New Case
             </Link>
           </Button>
-          <Button asChild variant="outline" size="sm">
+          <Button size="sm" variant="outline" className="shadow-sm" asChild>
             <Link href="/admin/documents">
               <FileText className="mr-2 h-4 w-4" />
               Documents
@@ -151,182 +157,206 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      {/* Quick Stats - Made more compact */}
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between py-2">
-            <CardTitle className="text-sm font-medium">Active Cases</CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="py-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xl font-bold">{stats.statusCounts.ACTIVE}</div>
-                <p className="text-xs text-muted-foreground">
-                  +{stats.statusCounts.PENDING} pending
-                </p>
+      {/* Quick Stats Grid */}
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        <Card className="shadow-sm hover:shadow-md transition-all">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-lg">
+                <Briefcase className="h-5 w-5 text-primary" />
               </div>
-              <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-                <ArrowUpRight className="h-4 w-4 text-primary" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Active Cases</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-2xl font-bold">{stats.statusCounts.ACTIVE}</h3>
+                  {stats.statusCounts.PENDING > 0 && (
+                    <Badge variant="secondary" className="font-normal">
+                      +{stats.statusCounts.PENDING} pending
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between py-2">
-            <CardTitle className="text-sm font-medium">Documents</CardTitle>
-            <Folder className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="py-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xl font-bold">{stats.documentCount}</div>
-                <p className="text-xs text-muted-foreground">
-                  Across all cases
-                </p>
+        <Card className="shadow-sm hover:shadow-md transition-all">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-lg">
+                <FileText className="h-5 w-5 text-primary" />
               </div>
-              <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-                <FileText className="h-4 w-4 text-primary" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Documents</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-2xl font-bold">{stats.documentCount}</h3>
+                  <span className="text-sm text-muted-foreground">total</span>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between py-2">
-            <CardTitle className="text-sm font-medium">Parties</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="py-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xl font-bold">{stats.totalParties}</div>
-                <p className="text-xs text-muted-foreground">
-                  Total involved parties
-                </p>
+        <Card className="shadow-sm hover:shadow-md transition-all">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-lg">
+                <Users className="h-5 w-5 text-primary" />
               </div>
-              <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-                <Scale className="h-4 w-4 text-primary" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Parties</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-2xl font-bold">{stats.totalParties}</h3>
+                  <span className="text-sm text-muted-foreground">involved</span>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between py-2">
-            <CardTitle className="text-sm font-medium">Case Completion</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="py-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xl font-bold">{stats.statusCounts.CLOSED}</div>
-                <p className="text-xs text-muted-foreground">
-                  Cases completed
-                </p>
+        <Card className="shadow-sm hover:shadow-md transition-all">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-lg">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
               </div>
-              <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-2xl font-bold">{stats.statusCounts.CLOSED}</h3>
+                  <span className="text-sm text-muted-foreground">cases</span>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-3 grid-cols-1 md:grid-cols-7">
-        {/* Case Overview - More compact */}
+      {/* Main Content Grid */}
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-7">
+        {/* Case Overview */}
         <Card className="col-span-1 md:col-span-4 shadow-sm">
-          <CardHeader className="py-2">
-            <CardTitle className="text-sm font-medium">Case Overview</CardTitle>
-            <CardDescription className="text-xs">Current case status distribution</CardDescription>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Case Overview</CardTitle>
+                <CardDescription>Status distribution of your cases</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" className="h-8" asChild>
+                <Link href="/admin/cases">View All</Link>
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="py-2">
-            <div className="space-y-3">
-              <div className="flex items-center gap-4">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span className="text-sm font-medium">Active</span>
-                    </div>
+          <CardContent className="pb-6">
+            <div className="space-y-4">
+              {/* Active Cases */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <span className="text-sm font-medium">Active Cases</span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <span className="font-bold">{stats.statusCounts.ACTIVE}</span>
+                    <Badge variant="secondary" className="font-normal">
+                      {Math.round((stats.statusCounts.ACTIVE / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100)}%
+                    </Badge>
                   </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div 
-                      className="h-full bg-green-500 transition-all" 
-                      style={{ 
-                        width: `${(stats.statusCounts.ACTIVE / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100}%` 
-                      }} 
-                    />
-                  </div>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 transition-all" 
+                    style={{ 
+                      width: `${(stats.statusCounts.ACTIVE / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100}%` 
+                    }} 
+                  />
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-yellow-500" />
-                      <span className="text-sm font-medium">Pending</span>
-                    </div>
+              {/* Pending Cases */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-yellow-500" />
+                    <span className="text-sm font-medium">Pending Cases</span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <span className="font-bold">{stats.statusCounts.PENDING}</span>
+                    <Badge variant="secondary" className="font-normal">
+                      {Math.round((stats.statusCounts.PENDING / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100)}%
+                    </Badge>
                   </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div 
-                      className="h-full bg-yellow-500 transition-all" 
-                      style={{ 
-                        width: `${(stats.statusCounts.PENDING / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100}%` 
-                      }} 
-                    />
-                  </div>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div 
+                    className="h-full bg-yellow-500 transition-all" 
+                    style={{ 
+                      width: `${(stats.statusCounts.PENDING / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100}%` 
+                    }} 
+                  />
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 text-red-500" />
-                      <span className="text-sm font-medium">Closed</span>
-                    </div>
+              {/* Closed Cases */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-red-500" />
+                    <span className="text-sm font-medium">Closed Cases</span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <span className="font-bold">{stats.statusCounts.CLOSED}</span>
+                    <Badge variant="secondary" className="font-normal">
+                      {Math.round((stats.statusCounts.CLOSED / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100)}%
+                    </Badge>
                   </div>
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div 
-                      className="h-full bg-red-500 transition-all" 
-                      style={{ 
-                        width: `${(stats.statusCounts.CLOSED / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100}%` 
-                      }} 
-                    />
-                  </div>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div 
+                    className="h-full bg-red-500 transition-all" 
+                    style={{ 
+                      width: `${(stats.statusCounts.CLOSED / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100}%` 
+                    }} 
+                  />
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Recent Activity - More compact */}
+        {/* Recent Activity */}
         <Card className="col-span-1 md:col-span-3 shadow-sm">
-          <CardHeader className="py-2">
-            <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
-            <CardDescription className="text-xs">Latest updates and changes</CardDescription>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Recent Activity</CardTitle>
+                <CardDescription>Latest updates and changes</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" className="h-8" asChild>
+                <Link href="/admin/documents">View All</Link>
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="py-2">
+          <CardContent className="pb-6">
             <div className="space-y-4">
               {stats.recentDocuments.map(doc => (
-                <div key={doc.id} className="flex items-start gap-3">
-                  <div className="rounded-full p-1.5 bg-primary/10">
-                    <FileText className="h-3 w-3 text-primary" />
+                <div key={doc.id} className="flex items-center gap-3 group">
+                  <div className="rounded-lg p-2 bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                    <FileText className="h-4 w-4 text-primary" />
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-medium leading-none">{doc.name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{doc.name}</p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>{format(new Date(doc.createdAt), 'MMM d, yyyy')}</span>
                       <span>•</span>
                       <span>{(doc.size / 1024).toFixed(1)} KB</span>
                     </div>
                   </div>
+                  <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity" asChild>
+                    <Link href={`/admin/documents/${doc.id}`}>
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
                 </div>
               ))}
             </div>
@@ -334,20 +364,20 @@ export default async function AdminPage() {
         </Card>
       </div>
 
-      {/* Tasks Table - More compact */}
+      {/* Tasks Table */}
       <Card className="shadow-sm">
-        <CardHeader className="py-2 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-sm font-medium">Recent Tasks</CardTitle>
-            <CardDescription className="text-xs">Your active and upcoming tasks</CardDescription>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Recent Tasks</CardTitle>
+              <CardDescription>Your active and upcoming tasks</CardDescription>
+            </div>
+            <Button variant="outline" size="sm" className="h-8" asChild>
+              <Link href="/admin/tasks">View All Tasks</Link>
+            </Button>
           </div>
-          <Button variant="outline" size="sm" asChild className="h-8">
-            <Link href="/admin/tasks">
-              View All Tasks
-            </Link>
-          </Button>
         </CardHeader>
-        <CardContent className="py-2">
+        <CardContent className="pb-6">
           <TasksTable 
             data={stats.recentTasks}
             simplified
