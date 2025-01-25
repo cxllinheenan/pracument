@@ -51,6 +51,8 @@ model User {
   cases         Case[]
   notes         Note[]
   tasks         Task[]
+  clients       Client[]
+  clientNotes   ClientNote[]
 }
 
 model VerificationToken {
@@ -105,10 +107,13 @@ model Document {
   folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
   caseId      String?
   case        Case?    @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  clientId    String?
+  client      Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
   
   @@index([userId])
   @@index([folderId])
   @@index([caseId])
+  @@index([clientId])
 }
 
 enum CaseStatus {
@@ -143,12 +148,15 @@ model Case {
   updatedAt   DateTime    @updatedAt
   userId      String
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId    String?
+  client      Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
   documents   Document[]
   notes       Note[]
   tasks       Task[]
   parties     Party[]
 
   @@index([userId])
+  @@index([clientId])
 }
 
 model Note {
@@ -196,5 +204,48 @@ model Party {
   case        Case      @relation(fields: [caseId], references: [id], onDelete: Cascade)
 
   @@index([caseId])
+}
+
+model Client {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  name        String
+  email       String?
+  phone       String?
+  address     String?   @db.Text
+  notes       String?   @db.Text
+  company     String?
+  status      ClientStatus @default(ACTIVE)
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cases       Case[]
+  documents   Document[]
+  clientNotes ClientNote[]
+
+  @@index([userId])
+}
+
+model ClientNote {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([userId])
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+  LEAD
+  FORMER
 } 
 

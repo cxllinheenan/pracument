@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/collapsible"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 interface SidebarNavProps {
   user: {
@@ -54,6 +55,11 @@ const mainNavItems = [
     href: "/admin/documents",
     icon: FileText,
   },
+  {
+    title: "Clients",
+    href: "/admin/clients",
+    icon: User,
+  },
 ]
 
 const caseNavItems = [
@@ -71,6 +77,12 @@ const aiItems = [
     icon: MessageSquare,
   },
 ]
+
+const casesNavItem = {
+  title: "Cases",
+  href: "/admin/cases",
+  icon: Briefcase,
+}
 
 export function SidebarNav({ user }: SidebarNavProps) {
   const pathname = usePathname()
@@ -143,9 +155,9 @@ export function SidebarNav({ user }: SidebarNavProps) {
                 </SidebarMenuItem>
               ))}
 
-              <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-                <CollapsibleTrigger asChild>
-                  <Link href="/admin/cases" className="w-full">
+              <Collapsible open={isOpen}>
+                <div className="flex items-center">
+                  <Link href="/admin/cases" className="flex-1">
                     <SidebarMenuButton 
                       isActive={pathname === '/admin/cases'}
                       className="w-full justify-between"
@@ -154,13 +166,27 @@ export function SidebarNav({ user }: SidebarNavProps) {
                         <Briefcase className="h-4 w-4" />
                         <span>Cases</span>
                       </span>
-                      <ChevronDown className={cn(
-                        "h-4 w-4 transition-transform duration-200",
-                        isOpen && "rotate-180"
-                      )} />
                     </SidebarMenuButton>
                   </Link>
-                </CollapsibleTrigger>
+                  <CollapsibleTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="px-2 hover:bg-accent"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setIsOpen(!isOpen)
+                      }}
+                    >
+                      <ChevronDown 
+                        className={cn(
+                          "h-4 w-4 transition-transform duration-200",
+                          isOpen && "rotate-180"
+                        )} 
+                      />
+                    </Button>
+                  </CollapsibleTrigger>
+                </div>
                 <CollapsibleContent className="pl-6">
                   {caseNavItems.map((item) => (
                     <SidebarMenuItem key={item.href}>
