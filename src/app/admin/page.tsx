@@ -28,7 +28,7 @@ async function getDashboardStats(userId: string) {
     activeCases,
     recentCase,
     caseStats,
-    totalParties,
+    totalClients,
     recentDocuments,
     recentTasks
   ] = await Promise.all([
@@ -57,12 +57,8 @@ async function getDashboardStats(userId: string) {
       where: { userId },
       _count: true
     }),
-    prisma.party.count({
-      where: {
-        case: {
-          userId
-        }
-      }
+    prisma.client.count({
+      where: { userId }
     }),
     // Get 5 most recent documents
     prisma.document.findMany({
@@ -111,7 +107,7 @@ async function getDashboardStats(userId: string) {
     activeCases, 
     recentCase,
     statusCounts,
-    totalParties,
+    totalClients,
     recentDocuments,
     recentTasks
   }
@@ -204,10 +200,10 @@ export default async function AdminPage() {
                 <Users className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Parties</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Clients</p>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-2xl font-bold">{stats.totalParties}</h3>
-                  <span className="text-sm text-muted-foreground">involved</span>
+                  <h3 className="text-2xl font-bold">{stats.totalClients}</h3>
+                  <span className="text-sm text-muted-foreground">registered</span>
                 </div>
               </div>
             </div>

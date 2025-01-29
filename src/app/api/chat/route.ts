@@ -76,12 +76,13 @@ Remember:
 - Maintain accuracy and clarity in responses
 - Treat all information with confidentiality
 - Keep a professional and neutral tone
-- Clearly communicate any limitations`
+- Clearly communicate any limitations
+- Keep answers concise and to the point`
         },
         ...messages
       ],
       temperature: 0.7,
-      maxTokens: 1000,
+      maxTokens: 500,
     })
 
     return result.toDataStreamResponse()

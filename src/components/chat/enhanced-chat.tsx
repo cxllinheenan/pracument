@@ -113,146 +113,154 @@ export function EnhancedChat({
                 )}
               </Button>
             </SheetTrigger>
-            <SheetContent>
-              <SheetHeader>
+            <SheetContent className="flex flex-col h-full p-0">
+              <SheetHeader className="px-6 py-4 border-b">
                 <SheetTitle>Chat Settings</SheetTitle>
               </SheetHeader>
               
-              {/* Selected Context Display */}
-              {(selectedCase || selectedClient || selectedDocuments.length > 0) && (
-                <div className="mt-4 p-4 border rounded-lg space-y-2">
-                  <h4 className="text-sm font-medium text-muted-foreground">Active Context</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedClient && (
-                      <Badge variant="secondary" className="gap-1.5">
-                        <User className="h-3 w-3" />
-                        {selectedClient.name}
-                        <XCircle 
-                          className="h-3 w-3 ml-1 cursor-pointer hover:text-destructive" 
-                          onClick={() => setSelectedClient(undefined)}
-                        />
-                      </Badge>
-                    )}
-                    {selectedCase && (
-                      <Badge variant="secondary" className="gap-1.5">
-                        <Briefcase className="h-3 w-3" />
-                        {selectedCase.title}
-                        <XCircle 
-                          className="h-3 w-3 ml-1 cursor-pointer hover:text-destructive" 
-                          onClick={() => setSelectedCase(undefined)}
-                        />
-                      </Badge>
-                    )}
-                    {selectedDocuments.map(doc => (
-                      <Badge key={doc.id} variant="secondary" className="gap-1.5">
-                        <FileText className="h-3 w-3" />
-                        {doc.name}
-                        <XCircle 
-                          className="h-3 w-3 ml-1 cursor-pointer hover:text-destructive" 
-                          onClick={() => setSelectedDocuments(prev => 
-                            prev.filter(d => d.id !== doc.id)
-                          )}
-                        />
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="flex-1 overflow-y-auto">
+                <div className="px-6 py-4 space-y-6">
+                  {/* Selected Context Display */}
+                  {(selectedCase || selectedClient || selectedDocuments.length > 0) && (
+                    <div className="p-4 border rounded-lg space-y-2">
+                      <h4 className="text-sm font-medium text-muted-foreground">Active Context</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedClient && (
+                          <Badge variant="secondary" className="gap-1.5">
+                            <User className="h-3 w-3" />
+                            {selectedClient.name}
+                            <XCircle 
+                              className="h-3 w-3 ml-1 cursor-pointer hover:text-destructive" 
+                              onClick={() => setSelectedClient(undefined)}
+                            />
+                          </Badge>
+                        )}
+                        {selectedCase && (
+                          <Badge variant="secondary" className="gap-1.5">
+                            <Briefcase className="h-3 w-3" />
+                            {selectedCase.title}
+                            <XCircle 
+                              className="h-3 w-3 ml-1 cursor-pointer hover:text-destructive" 
+                              onClick={() => setSelectedCase(undefined)}
+                            />
+                          </Badge>
+                        )}
+                        {selectedDocuments.map(doc => (
+                          <Badge key={doc.id} variant="secondary" className="gap-1.5">
+                            <FileText className="h-3 w-3" />
+                            {doc.name}
+                            <XCircle 
+                              className="h-3 w-3 ml-1 cursor-pointer hover:text-destructive" 
+                              onClick={() => setSelectedDocuments(prev => 
+                                prev.filter(d => d.id !== doc.id)
+                              )}
+                            />
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-              <Tabs defaultValue="clients" className="mt-6">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="clients">Clients</TabsTrigger>
-                  <TabsTrigger value="cases">Cases</TabsTrigger>
-                  <TabsTrigger value="documents">Documents</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="clients" className="mt-4 space-y-4">
-                  {clients?.length ? (
-                    clients.map(client => (
-                      <Button
-                        key={client.id}
-                        variant={selectedClient?.id === client.id ? "default" : "outline"}
-                        className="w-full justify-start gap-2"
-                        onClick={() => setSelectedClient(
-                          selectedClient?.id === client.id ? undefined : client
-                        )}
-                      >
-                        <User className="h-4 w-4" />
-                        <div className="flex-1 text-left">
-                          <div className="font-medium">{client.name}</div>
-                          {client.company && (
-                            <div className="text-xs text-muted-foreground">
-                              {client.company}
-                            </div>
-                          )}
-                        </div>
-                      </Button>
-                    ))
-                  ) : (
-                    <div className="text-sm text-muted-foreground text-center py-4">
-                      No clients available
-                    </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="cases" className="mt-4 space-y-4">
-                  {cases?.length ? (
-                    cases.map(case_ => (
-                      <Button
-                        key={case_.id}
-                        variant={selectedCase?.id === case_.id ? "default" : "outline"}
-                        className="w-full justify-start gap-2"
-                        onClick={() => setSelectedCase(
-                          selectedCase?.id === case_.id ? undefined : case_
-                        )}
-                      >
-                        <Briefcase className="h-4 w-4" />
-                        <div className="flex-1 text-left">
-                          <div className="font-medium">{case_.title}</div>
-                          {case_.description && (
-                            <div className="text-xs text-muted-foreground line-clamp-1">
-                              {case_.description}
-                            </div>
-                          )}
-                        </div>
-                      </Button>
-                    ))
-                  ) : (
-                    <div className="text-sm text-muted-foreground text-center py-4">
-                      No cases available
-                    </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="documents" className="mt-4 space-y-4">
-                  {documents?.length ? (
-                    documents.map(doc => (
-                      <Button
-                        key={doc.id}
-                        variant={selectedDocuments.some(d => d.id === doc.id) ? "default" : "outline"}
-                        className="w-full justify-start gap-2"
-                        onClick={() => setSelectedDocuments(prev => 
-                          prev.some(d => d.id === doc.id)
-                            ? prev.filter(d => d.id !== doc.id)
-                            : [...prev, doc]
-                        )}
-                      >
-                        <FileText className="h-4 w-4" />
-                        <div className="flex-1 text-left">
-                          <div className="font-medium">{doc.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {(doc.size / 1024).toFixed(1)} KB
+                  <Tabs defaultValue="clients" className="space-y-4">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="clients">Clients</TabsTrigger>
+                      <TabsTrigger value="cases">Cases</TabsTrigger>
+                      <TabsTrigger value="documents">Documents</TabsTrigger>
+                    </TabsList>
+                    
+                    <div className="space-y-4">
+                      <TabsContent value="clients" className="m-0">
+                        {clients?.length ? (
+                          clients.map(client => (
+                            <Button
+                              key={client.id}
+                              variant={selectedClient?.id === client.id ? "default" : "outline"}
+                              className="w-full justify-start gap-2"
+                              onClick={() => setSelectedClient(
+                                selectedClient?.id === client.id ? undefined : client
+                              )}
+                            >
+                              <User className="h-4 w-4" />
+                              <div className="flex-1 text-left">
+                                <div className="font-medium">{client.name}</div>
+                                {client.company && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {client.company}
+                                  </div>
+                                )}
+                              </div>
+                            </Button>
+                          ))
+                        ) : (
+                          <div className="text-sm text-muted-foreground text-center py-4">
+                            No clients available
                           </div>
-                        </div>
-                      </Button>
-                    ))
-                  ) : (
-                    <div className="text-sm text-muted-foreground text-center py-4">
-                      No documents available
+                        )}
+                      </TabsContent>
+
+                      <TabsContent value="cases" className="m-0">
+                        {cases?.length ? (
+                          cases.map(case_ => (
+                            <Button
+                              key={case_.id}
+                              variant={selectedCase?.id === case_.id ? "default" : "outline"}
+                              className="w-full justify-start gap-2"
+                              onClick={() => setSelectedCase(
+                                selectedCase?.id === case_.id ? undefined : case_
+                              )}
+                            >
+                              <Briefcase className="h-4 w-4" />
+                              <div className="flex-1 text-left">
+                                <div className="font-medium">{case_.title}</div>
+                                {case_.description && (
+                                  <div className="text-xs text-muted-foreground line-clamp-1">
+                                    {case_.description}
+                                  </div>
+                                )}
+                              </div>
+                            </Button>
+                          ))
+                        ) : (
+                          <div className="text-sm text-muted-foreground text-center py-4">
+                            No cases available
+                          </div>
+                        )}
+                      </TabsContent>
+
+                      <TabsContent value="documents" className="m-0">
+                        {documents?.length ? (
+                          <div className="space-y-2">
+                            {documents.map(doc => (
+                              <Button
+                                key={doc.id}
+                                variant={selectedDocuments.some(d => d.id === doc.id) ? "default" : "outline"}
+                                className="w-full justify-start gap-2"
+                                onClick={() => setSelectedDocuments(prev => 
+                                  prev.some(d => d.id === doc.id)
+                                    ? prev.filter(d => d.id !== doc.id)
+                                    : [...prev, doc]
+                                )}
+                              >
+                                <FileText className="h-4 w-4" />
+                                <div className="flex-1 text-left truncate">
+                                  <div className="font-medium truncate">{doc.name}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {(doc.size / 1024).toFixed(1)} KB
+                                  </div>
+                                </div>
+                              </Button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground text-center py-4">
+                            No documents available
+                          </div>
+                        )}
+                      </TabsContent>
                     </div>
-                  )}
-                </TabsContent>
-              </Tabs>
+                  </Tabs>
+                </div>
+              </div>
             </SheetContent>
           </Sheet>
         </div>
