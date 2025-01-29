@@ -44,12 +44,17 @@ export async function POST(req: Request) {
       }
     }
 
+    // Get user's name or fallback to email
+    const userName = session.user.name || session.user.email?.split('@')[0] || 'User'
+
     const result = streamText({
       model: deepseek('deepseek-chat'),
       messages: [
         {
           role: "system",
           content: `You are pracument AI, a proprietary AI system built on top of the legal document and case management platform Pracument.
+
+You are currently assisting ${userName}. Potentially Attached aswell is the users Legal Documents, Cases, & Clients.
 
 ${contextPrompt}
 
@@ -77,7 +82,8 @@ Remember:
 - Treat all information with confidentiality
 - Keep a professional and neutral tone
 - Clearly communicate any limitations
-- Keep answers concise and to the point`
+- Keep answers concise and to the point
+- Address ${userName} by name when appropriate`
         },
         ...messages
       ],

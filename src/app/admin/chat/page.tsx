@@ -36,6 +36,7 @@ export default async function ChatPage() {
         cases={cases} 
         documents={documents} 
         clients={clients}
+        userId={session.user.id}
       />
     </div>
   )

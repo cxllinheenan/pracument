@@ -35,13 +35,15 @@ interface EnhancedChatProps {
   documents?: Document[]
   clients?: Client[]
   initialClientId?: string
+  userId: string
 }
 
 export function EnhancedChat({ 
   cases = [], 
   documents = [], 
   clients = [],
-  initialClientId 
+  initialClientId,
+  userId 
 }: EnhancedChatProps) {
   const [selectedCase, setSelectedCase] = useState<Case>()
   const [selectedDocuments, setSelectedDocuments] = useState<Document[]>([])
@@ -55,7 +57,7 @@ export function EnhancedChat({
   }, [initialClientId, clients])
   
   const { messages, input, handleInputChange, handleSubmit, isLoading, error, reload } = useChat({
-    id: 'legal-chat',
+    id: `legal-chat-${userId}`,
     body: {
       caseId: selectedCase?.id,
       clientId: selectedClient?.id,
@@ -69,6 +71,13 @@ export function EnhancedChat({
       }
     ]
   })
+
+  useEffect(() => {
+    const chatHistory = localStorage.getItem(`legal-chat-${userId}`)
+    if (!chatHistory) {
+      localStorage.removeItem('legal-chat')
+    }
+  }, [userId])
 
   const scrollRef = useRef<HTMLDivElement>(null)
 
