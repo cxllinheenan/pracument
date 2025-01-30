@@ -55,7 +55,7 @@ An open-source, modern legal document and case management system built with Next
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/pracument.git
+   git clone https://github.com/cxllinheenan/pracument.git
    cd pracument
    ```
 
@@ -130,25 +130,6 @@ src/
 - **Authentication**: NextAuth.js with database adapter
 - **API Routes**: RESTful endpoints for all CRUD operations
 - **UI Components**: Customized shadcn/ui components for consistent design
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
-
-- Code of Conduct
-- Development process
-- How to submit pull requests
-- Coding standards
-
-## Roadmap
-
-See our detailed [Roadmap](docs/roadmap.md) for planned features and enhancements, including:
-
-- Enhanced AI document analysis
-- Advanced search capabilities
-- Multi-tenant support
-- E-signature integration
-- Mobile application
 
 ## License
 
