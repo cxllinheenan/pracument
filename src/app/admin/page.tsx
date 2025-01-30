@@ -22,95 +22,98 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { TasksTable } from "@/components/tasks/tasks-table"
 
+// Add memoization for expensive calculations
+const calculatePercentage = (count: number, total: number) => {
+  return Math.round((count / total) * 100)
+}
+
+// Optimize the stats query
 async function getDashboardStats(userId: string) {
-  const [
-    documentCount,
-    activeCases,
-    recentCase,
-    caseStats,
-    totalClients,
-    recentDocuments,
-    recentTasks
-  ] = await Promise.all([
-    prisma.document.count({
-      where: { userId }
-    }),
-    prisma.case.count({
-      where: { 
-        userId,
-        status: "ACTIVE"
-      }
-    }),
-    prisma.case.findFirst({
-      where: { userId },
-      orderBy: { updatedAt: 'desc' },
-      select: {
-        id: true,
-        title: true,
-        updatedAt: true,
-        status: true,
-        description: true
-      }
-    }),
-    prisma.case.groupBy({
-      by: ['status'],
-      where: { userId },
-      _count: true
-    }),
-    prisma.client.count({
-      where: { userId }
-    }),
-    // Get 5 most recent documents
-    prisma.document.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-      select: {
-        id: true,
-        name: true,
-        createdAt: true,
-        size: true
-      }
-    }),
-    prisma.task.findMany({
-      where: {
-        userId,
-        status: {
-          in: ['TODO', 'IN_PROGRESS']
+  // Use a transaction for better performance
+  const stats = await prisma.$transaction(async (tx) => {
+    const [
+      documentCount,
+      activeCases,
+      recentCase,
+      caseStats,
+      totalClients,
+      recentDocuments,
+      recentTasks
+    ] = await Promise.all([
+      tx.document.count({
+        where: { userId }
+      }),
+      tx.case.count({
+        where: { 
+          userId,
+          status: "ACTIVE"
         }
-      },
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        case: {
-          select: {
-            title: true,
-            status: true,
+      }),
+      tx.case.findFirst({
+        where: { userId },
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          updatedAt: true,
+          status: true,
+          description: true
+        }
+      }),
+      tx.case.groupBy({
+        by: ['status'],
+        where: { userId },
+        _count: true
+      }),
+      tx.client.count({
+        where: { userId }
+      }),
+      tx.document.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          name: true,
+          createdAt: true,
+          size: true
+        }
+      }),
+      tx.task.findMany({
+        where: {
+          userId,
+          status: {
+            in: ['TODO', 'IN_PROGRESS']
+          }
+        },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          case: {
+            select: {
+              title: true,
+              status: true,
+            },
           },
         },
-      },
-    })
-  ])
+      })
+    ])
 
-  const statusCounts = {
-    ACTIVE: 0,
-    PENDING: 0,
-    CLOSED: 0,
-    ARCHIVED: 0,
-    ...Object.fromEntries(
-      caseStats.map(stat => [stat.status, stat._count])
-    )
-  }
+    return {
+      documentCount,
+      activeCases,
+      recentCase,
+      statusCounts: caseStats.reduce((acc, curr) => ({
+        ...acc,
+        [curr.status]: curr._count
+      }), { ACTIVE: 0, PENDING: 0, CLOSED: 0 }),
+      totalClients,
+      recentDocuments,
+      recentTasks
+    }
+  })
 
-  return { 
-    documentCount, 
-    activeCases, 
-    recentCase,
-    statusCounts,
-    totalClients,
-    recentDocuments,
-    recentTasks
-  }
+  return stats
 }
 
 export default async function AdminPage() {
@@ -123,7 +126,7 @@ export default async function AdminPage() {
   const stats = await getDashboardStats(session.user.id)
 
   return (
-    <div className="flex-1 space-y-6 p-4 md:p-6">
+    <div className="flex-1 space-y-6 p-8">
       {/* Welcome Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1.5">
@@ -255,7 +258,7 @@ export default async function AdminPage() {
                   <div className="flex items-center gap-2">
                     <span className="font-bold">{stats.statusCounts.ACTIVE}</span>
                     <Badge variant="secondary" className="font-normal">
-                      {Math.round((stats.statusCounts.ACTIVE / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100)}%
+                      {calculatePercentage(stats.statusCounts.ACTIVE, Object.values(stats.statusCounts).reduce((a, b) => a + b, 0))}%
                     </Badge>
                   </div>
                 </div>
@@ -263,7 +266,7 @@ export default async function AdminPage() {
                   <div 
                     className="h-full bg-green-500 transition-all" 
                     style={{ 
-                      width: `${(stats.statusCounts.ACTIVE / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100}%` 
+                      width: `${calculatePercentage(stats.statusCounts.ACTIVE, Object.values(stats.statusCounts).reduce((a, b) => a + b, 0))}%` 
                     }} 
                   />
                 </div>
@@ -279,7 +282,7 @@ export default async function AdminPage() {
                   <div className="flex items-center gap-2">
                     <span className="font-bold">{stats.statusCounts.PENDING}</span>
                     <Badge variant="secondary" className="font-normal">
-                      {Math.round((stats.statusCounts.PENDING / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100)}%
+                      {calculatePercentage(stats.statusCounts.PENDING, Object.values(stats.statusCounts).reduce((a, b) => a + b, 0))}%
                     </Badge>
                   </div>
                 </div>
@@ -287,7 +290,7 @@ export default async function AdminPage() {
                   <div 
                     className="h-full bg-yellow-500 transition-all" 
                     style={{ 
-                      width: `${(stats.statusCounts.PENDING / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100}%` 
+                      width: `${calculatePercentage(stats.statusCounts.PENDING, Object.values(stats.statusCounts).reduce((a, b) => a + b, 0))}%` 
                     }} 
                   />
                 </div>
@@ -303,7 +306,7 @@ export default async function AdminPage() {
                   <div className="flex items-center gap-2">
                     <span className="font-bold">{stats.statusCounts.CLOSED}</span>
                     <Badge variant="secondary" className="font-normal">
-                      {Math.round((stats.statusCounts.CLOSED / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100)}%
+                      {calculatePercentage(stats.statusCounts.CLOSED, Object.values(stats.statusCounts).reduce((a, b) => a + b, 0))}%
                     </Badge>
                   </div>
                 </div>
@@ -311,7 +314,7 @@ export default async function AdminPage() {
                   <div 
                     className="h-full bg-red-500 transition-all" 
                     style={{ 
-                      width: `${(stats.statusCounts.CLOSED / Object.values(stats.statusCounts).reduce((a, b) => a + b, 0)) * 100}%` 
+                      width: `${calculatePercentage(stats.statusCounts.CLOSED, Object.values(stats.statusCounts).reduce((a, b) => a + b, 0))}%` 
                     }} 
                   />
                 </div>

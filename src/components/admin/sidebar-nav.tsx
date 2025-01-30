@@ -97,7 +97,7 @@ export function SidebarNav({ user }: SidebarNavProps) {
   }
 
   return (
-    <Sidebar>
+    <Sidebar className="border-r bg-sidebar-background">
       <SidebarHeader className="border-b border-border/5">
         <div className="flex h-16 items-center gap-2 px-4">
           <div className="relative h-8 w-8">
@@ -115,7 +115,7 @@ export function SidebarNav({ user }: SidebarNavProps) {
           <SidebarTrigger className="ml-auto md:hidden" />
         </div>
       </SidebarHeader>
-      <SidebarContent className="px-2">
+      <SidebarContent className="flex flex-col flex-1">
         <div className="space-y-4 py-4">
           <div className="px-3 py-2">
             <div className="flex items-center gap-3 rounded-lg bg-secondary/50 p-2">

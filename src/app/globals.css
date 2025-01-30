@@ -82,6 +82,18 @@ body {
   .delay-200 {
     animation-delay: 200ms;
   }
+  
+  .content-visibility-auto {
+    content-visibility: auto;
+  }
+  
+  .backface-visibility-hidden {
+    backface-visibility: hidden;
+  }
+  
+  .transform-gpu {
+    transform: translateZ(0);
+  }
 }
 
 @keyframes fade-in {

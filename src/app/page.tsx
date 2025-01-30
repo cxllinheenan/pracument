@@ -28,14 +28,14 @@ import { useRef } from "react";
 import Link from "next/link"
 
 export default function Home() {
-  const featuresRef = useRef<HTMLElement>(null);
+  const featuresRef = useRef<HTMLDivElement>(null)
 
   const scrollToFeatures = () => {
     featuresRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col">
       {/* Navigation - Updated */}
       <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -96,7 +96,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section - Enhanced with grid pattern */}
+      {/* Hero Section - Enhanced with animation and social proof */}
       <section className="relative py-20 sm:py-32 overflow-hidden">
         <div className="absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
@@ -106,6 +106,7 @@ export default function Home() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-8">
             <div className="flex flex-col justify-center space-y-8">
+              {/* Enhanced Badge */}
               <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm text-primary w-fit animate-fade-in">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
@@ -113,6 +114,8 @@ export default function Home() {
                 </span>
                 Now with AI-powered document analysis
               </div>
+
+              {/* Enhanced Headline */}
               <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-foreground animate-fade-in-up">
                 Legal Document Management,{" "}
                 <span className="text-primary relative">
@@ -120,11 +123,15 @@ export default function Home() {
                   <span className="absolute bottom-0 left-0 w-full h-2 bg-primary/20 -z-10 transform -skew-x-12"></span>
                 </span>
               </h1>
+
+              {/* Enhanced Subheadline */}
               <p className="text-lg text-muted-foreground animate-fade-in-up delay-100">
                 Streamline your legal document workflow with AI-powered organization,
                 intelligent search, and secure collaboration tools designed for modern
                 legal teams.
               </p>
+
+              {/* Enhanced CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up delay-200">
                 <Button size="lg" className="text-base relative overflow-hidden group">
                   <span className="relative z-10">Start Free Trial</span>
@@ -135,29 +142,32 @@ export default function Home() {
                   <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </Button>
               </div>
-              {/* Stats with enhanced design */}
-              <div className="grid grid-cols-3 gap-4 pt-8 border-t border-border/40">
-                {stats.map((stat, index) => (
-                  <div key={index} className="text-center transform hover:scale-105 transition-transform">
-                    <div className="text-2xl font-bold text-primary">{stat.value}</div>
-                    <div className="text-sm text-muted-foreground">{stat.label}</div>
-                  </div>
-                ))}
+
+              {/* Added Social Proof */}
+              <div className="pt-8 border-t border-border/40">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  {stats.map((stat, index) => (
+                    <div key={index} className="space-y-2">
+                      <p className="text-2xl font-bold text-primary">{stat.value}</p>
+                      <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-            {/* Enhanced Hero Image Section */}
-            <div className="relative lg:mt-0">
-              <div className="relative">
-                <div className="aspect-[4/3] overflow-hidden rounded-xl bg-gradient-to-br from-primary/20 via-primary/5 to-background shadow-lg border border-border/50 transform hover:scale-[1.02] transition-transform">
-                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:16px_16px]" />
-                  <Image
-                    src="/dashboard-preview.png" // Add your dashboard preview image
-                    alt="Pracument Dashboard"
-                    fill
-                    className="object-cover opacity-90"
-                  />
-                </div>
-                <div className="absolute -bottom-4 -right-4 h-72 w-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+
+            {/* Added Hero Image/Visual */}
+            <div className="relative lg:block hidden">
+              <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-primary/10 rounded-2xl blur-3xl" />
+              <div className="relative bg-background/50 backdrop-blur-sm border border-border/50 rounded-2xl p-4">
+                <Image
+                  src="/dashboard-preview.png"
+                  alt="Pracument Dashboard"
+                  width={800}
+                  height={600}
+                  className="rounded-lg shadow-2xl"
+                  priority
+                />
               </div>
             </div>
           </div>
