@@ -5,10 +5,17 @@ import Link from "next/link"
 import { DocumentViewer } from "@/components/document-viewer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Slider } from "@/components/ui/slider"
 import { formatFileSize } from "@/lib/utils"
 import { formatDistanceToNow } from "date-fns"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import {
   Tooltip,
   TooltipContent,
@@ -16,24 +23,28 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { 
-  ArrowLeft, 
-  FileText, 
-  Download, 
-  Clock, 
+  ArrowLeft,
+  FileText,
+  Download,
+  Clock,
   HardDrive,
   ZoomIn,
   ZoomOut,
   RotateCw,
   Printer,
   Share2,
-  BookOpen,
-  Search,
+  PanelLeftClose,
+  PanelLeft,
+  MoreVertical,
   ChevronLeft,
   ChevronRight,
-  Maximize2,
-  PanelLeftClose,
 } from "lucide-react"
-import { Card } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface Document {
   id: string
@@ -42,161 +53,187 @@ interface Document {
   type: string
   createdAt: string | Date
   url: string | null
-  folderId: string | null
-}
-
-// DocumentToolbar component definition
-function DocumentToolbar({
-  zoom,
-  onZoomChange,
-  currentPage,
-  totalPages,
-  onPageChange,
-  onRotate
-}: {
-  zoom: number
-  onZoomChange: (zoom: number) => void
-  currentPage: number
-  totalPages: number
-  onPageChange: (page: number) => void
-  onRotate: () => void
-}) {
-  const handleZoomIn = () => onZoomChange(Math.min(zoom + 10, 200))
-  const handleZoomOut = () => onZoomChange(Math.max(zoom - 10, 50))
-  const handleZoomChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value)
-    if (!isNaN(value) && value >= 50 && value <= 200) {
-      onZoomChange(value)
-    }
-  }
-
-  return (
-    <div className="w-full border-b bg-background">
-      <div className="flex items-center justify-between px-4 py-2">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center space-x-1 rounded-md border bg-muted px-1">
-            <Button variant="ghost" size="sm" onClick={handleZoomOut}>
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-            <Input 
-              type="number"
-              min={50}
-              max={200}
-              value={zoom}
-              onChange={handleZoomChange}
-              className="h-8 w-16 border-0 text-center bg-transparent" 
-            />
-            <span className="text-sm text-muted-foreground">%</span>
-            <Button variant="ghost" size="sm" onClick={handleZoomIn}>
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <Separator orientation="vertical" className="h-4" />
-
-          <Button variant="ghost" size="sm" onClick={onRotate}>
-            <RotateCw className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex items-center space-x-2">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-              disabled={currentPage <= 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center space-x-1">
-              <Input 
-                type="number"
-                min={1}
-                max={totalPages}
-                value={currentPage}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value)
-                  if (!isNaN(value) && value >= 1 && value <= totalPages) {
-                    onPageChange(value)
-                  }
-                }}
-                className="h-8 w-12 text-center" 
-              />
-              <span className="text-sm text-muted-foreground">/</span>
-              <span className="text-sm">{totalPages}</span>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage >= totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 export function DocumentPageClient({ document }: { document: Document }) {
   const [zoom, setZoom] = useState(100)
   const [rotation, setRotation] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(0)
-  const handleRotate = () => setRotation(prev => (prev + 90) % 360)
+  const [totalPages, setTotalPages] = useState(1)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const handleRotate = () => setRotation((prev) => (prev + 90) % 360)
+  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 10, 200))
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 10, 50))
 
   return (
-    <div className="flex h-screen flex-col">
-      {/* Top Navigation Bar */}
-      <div className="flex items-center justify-between border-b px-4 py-2 bg-background">
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/admin/documents" className="gap-2">
+    <div className="flex h-screen flex-col bg-muted/30">
+      {/* Top Toolbar */}
+      <div className="flex h-14 items-center justify-between border-b bg-background px-4">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/admin/documents">
               <ArrowLeft className="h-4 w-4" />
-              Back
             </Link>
           </Button>
-          <Separator orientation="vertical" className="h-8" />
-          <div className="flex items-center space-x-3">
-            <FileText className="h-5 w-5 text-primary" />
-            <div>
-              <h2 className="font-semibold">{document.name}</h2>
-              <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                <span>{formatFileSize(document.size)}</span>
-                <span>•</span>
-                <span>{formatDistanceToNow(new Date(document.createdAt), { addSuffix: true })}</span>
-              </div>
-            </div>
-          </div>
+          <Separator orientation="vertical" className="h-6" />
+          <h1 className="text-lg font-semibold">{document.name}</h1>
+          <Badge variant="secondary" className="ml-2">
+            {document.type.split("/")[1].toUpperCase()}
+          </Badge>
         </div>
 
-        <div className="flex items-center space-x-2">
-          {document.url && (
-            <Button variant="outline" size="sm" asChild>
-              <a href={document.url} download={document.name} className="gap-2">
-                <Download className="h-4 w-4" />
-                Download
-              </a>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-md border bg-background">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-          )}
+            <Separator orientation="vertical" className="h-6" />
+            <div className="flex items-center px-3">
+              <Input
+                type="number"
+                value={currentPage}
+                onChange={(e) => setCurrentPage(Number(e.target.value))}
+                className="w-12 text-center"
+                min={1}
+                max={totalPages}
+              />
+              <span className="mx-2 text-muted-foreground">of</span>
+              <span>{totalPages}</span>
+            </div>
+            <Separator orientation="vertical" className="h-6" />
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={handleZoomOut}>
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <div className="w-32 px-2">
+              <Slider
+                value={[zoom]}
+                onValueChange={([value]) => setZoom(value)}
+                min={50}
+                max={200}
+                step={10}
+                className="w-full"
+              />
+            </div>
+            <Button variant="ghost" size="icon" onClick={handleZoomIn}>
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <Separator orientation="vertical" className="h-6" />
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={handleRotate}>
+                  <RotateCw className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Rotate</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            {sidebarOpen ? (
+              <PanelLeftClose className="h-4 w-4" />
+            ) : (
+              <PanelLeft className="h-4 w-4" />
+            )}
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>
+                <Printer className="mr-2 h-4 w-4" /> Print
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Share2 className="mr-2 h-4 w-4" /> Share
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Download className="mr-2 h-4 w-4" /> Download
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* Document Toolbar - now directly rendered */}
-      <DocumentToolbar 
-        zoom={zoom}
-        onZoomChange={setZoom}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        onRotate={handleRotate}
-      />
+      {/* Document Area */}
+      <div className="relative flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <SheetContent 
+            side="left" 
+            className="w-[300px] p-0"
+          >
+            <div className="flex flex-col h-full">
+              <SheetHeader className="p-4 border-b">
+                <div className="flex items-center justify-between">
+                  <SheetTitle>Document Info</SheetTitle>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <PanelLeftClose className="h-4 w-4" />
+                  </Button>
+                </div>
+              </SheetHeader>
+              <div className="p-4 space-y-6 flex-1 overflow-auto">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">File Details</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm">
+                      <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Name:</span>
+                      <span className="ml-2 font-medium">{document.name}</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <HardDrive className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Size:</span>
+                      <span className="ml-2 font-medium">{formatFileSize(document.size)}</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">Created:</span>
+                      <span className="ml-2 font-medium">
+                        {formatDistanceToNow(new Date(document.createdAt), { addSuffix: true })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
 
-      {/* Document Viewer */}
-      <div className="flex-1 bg-muted/10">
+        {/* Main Viewer */}
         <DocumentViewer
           documentId={document.id}
           type={document.type}
@@ -204,6 +241,7 @@ export function DocumentPageClient({ document }: { document: Document }) {
           rotation={rotation}
           currentPage={currentPage}
           onLoadSuccess={setTotalPages}
+          sidebarOpen={sidebarOpen}
         />
       </div>
     </div>

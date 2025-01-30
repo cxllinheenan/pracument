@@ -1,225 +1,156 @@
-# Next.js Boilerplate 
+# Pracument - AI-Powered Legal Practice Management Platform
 
-## Table of Contents
-
-- [Next.js Boilerplate](#nextjs-boilerplate)
-  - [Table of Contents](#table-of-contents)
-  - [Features](#features)
-  - [Technologies](#technologies)
-  - [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Installation](#installation)
-    - [Environment Variables](#environment-variables)
-    - [Database Setup](#database-setup)
-  - [Scripts](#scripts)
-  - [Project Structure](#project-structure)
-  - [Roadmap](#roadmap)
-  - [Contributing](#contributing)
-  - [License](#license)
+An open-source, modern legal document and case management system built with Next.js 15, featuring AI-powered document analysis, secure client management, and collaborative case tracking.
 
 ## Features
-Key features of this Next.js Boilerplate include:
-- Server-side rendering with dynamic routing
-- Authentication using NextAuth.js and Prisma
-- Database management powered by PostgreSQL
-- Fully integrated Tailwind CSS for styling
-- Radix UI components for accessible, high-quality UI
-- Lucide customizable icons
-- Prisma ORM for query generation and migrations
 
-## Technologies
+- 📄 **Intelligent Document Management**
+  - AI-powered document analysis and text extraction
+  - Secure document storage with Cloudflare R2
+  - Advanced search across document contents
+  - Hierarchical folder organization
 
-- **[Next.js](https://nextjs.org)**: React framework for building server-rendered applications.
-- **[Prisma](https://www.prisma.io)**: Next-generation ORM for Node.js and TypeScript.
-- **[NextAuth.js](https://next-auth.js.org)**: Authentication solution for Next.js applications.
-- **[Tailwind CSS](https://tailwindcss.com)**: Utility-first CSS framework for styling.
-- **[Radix UI](https://www.radix-ui.com)**: Primitives for building high-quality, accessible UI components.
-- **[Lucide](https://lucide.dev)**: Beautiful, customizable open-source icons.
-- **[PostgreSQL](https://www.postgresql.org)**: Powerful, open-source object-relational database system.
+- 👥 **Client & Case Management**
+  - Comprehensive client profiles
+  - Case tracking with status updates
+  - Document-to-case associations
+  - Task management and deadlines
+
+- 🤖 **AI Integration**
+  - Document content analysis with Deepseek R1
+  - Context-aware legal research assistant
+  - Automated text extraction from PDFs and DOCX
+  - Real-time AI chat interface
+
+- 🔒 **Enterprise-Grade Security**
+  - Role-based access control
+  - Secure document storage
+  - Audit trails and activity logging
+  - Auth.js authentication
+
+## Tech Stack
+
+- **Framework**: [Next.js 15](https://nextjs.org) with App Router
+- **Database**: [PostgreSQL](https://www.postgresql.org) with [Prisma ORM](https://www.prisma.io)
+- **Authentication**: [NextAuth.js](https://next-auth.js.org)
+- **Storage**: [Cloudflare R2](https://www.cloudflare.com/products/r2)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com) + [Radix UI](https://www.radix-ui.com)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com)
+- **AI Integration**: 
+  - Vercel AI SDK
+  - Deepseek R1 model
+  - LangChain for document processing
+- **Document Processing**: PDF.js, Mammoth
 
 ## Getting Started
 
 ### Prerequisites
 
-Ensure you have the following installed:
-
-- **[Node.js](https://nodejs.org/en/download/)** (v14 or later)
-- **[npm](https://www.npmjs.com/get-npm)** or **[Yarn](https://yarnpkg.com/getting-started/install)**
-- **[PostgreSQL](https://www.postgresql.org/download/)**
+- Node.js 18.17 or later
+- PostgreSQL 12 or later
+- Cloudflare R2 account (for document storage)
+- Deepseek API key (for AI features)
 
 ### Installation
 
-1. **Clone the repository**
-
+1. Clone the repository:
    ```bash
    git clone https://github.com/yourusername/pracument.git
    cd pracument
    ```
 
-2. **Install dependencies**
-
-   Using npm:
-
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-   Or using Yarn:
-
+3. Set up environment variables:
    ```bash
-   yarn install
+   cp .env.example .env
    ```
-
-3. **Set up environment variables**
-
-   Create a `.env` file in the root directory and add the following:
-
+   
+   Configure the following in your `.env`:
    ```env
-   DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DATABASE
-   NEXTAUTH_URL=http://localhost:3000
-   NEXTAUTH_SECRET=your_secret_key
+   DATABASE_URL="postgresql://..."
+   NEXTAUTH_URL="http://localhost:3000"
+   NEXTAUTH_SECRET="your-secret-key"
+   
+   # Cloudflare R2
+   R2_ACCESS_KEY="your-access-key"
+   R2_SECRET_KEY="your-secret-key"
+   CLOUDFLARE_ACCOUNT_ID="your-account-id"
+   
+   # AI Configuration
+   DEEPSEEK_API_KEY="your-api-key"
    ```
 
-   Replace `USER`, `PASSWORD`, `HOST`, `PORT`, and `DATABASE` with your PostgreSQL credentials. Generate a secure `NEXTAUTH_SECRET` using the following command:
-
+4. Initialize the database:
    ```bash
-   openssl rand -base64 32
+   npx prisma migrate dev
    ```
 
-4. **Run Prisma migrations**
-
-   ```bash
-   npx prisma migrate dev --name init
-   ```
-
-5. **Start the development server**
-
-   Using npm:
-
+5. Start the development server:
    ```bash
    npm run dev
    ```
 
-   Or using Yarn:
-
-   ```bash
-   yarn dev
-   ```
-
-   The application will be available at [http://localhost:3000](http://localhost:3000).
-
-### Environment Variables
-
-| Variable        | Description                                                        |
-| --------------- | ------------------------------------------------------------------ |
-| `DATABASE_URL`  | Connection string for your PostgreSQL database.                    |
-| `NEXTAUTH_URL`  | URL of your Next.js application (e.g., `http://localhost:3000`).   |
-| `NEXTAUTH_SECRET` | A secret key for encrypting NextAuth.js tokens.                   |
-
-### Database Setup
-
-Pracument uses Prisma as the ORM with PostgreSQL as the database. Ensure your PostgreSQL server is running and accessible with the credentials provided in the `.env` file.
-
-To reset the database and apply migrations:
-
-```bash
-npx prisma migrate reset
-```
-
-## Scripts
-
-| Command       | Description                                |
-| ------------- | ------------------------------------------ |
-| `npm run dev` | Starts the development server.            |
-| `npm run build` | Builds the application for production.     |
-| `npm run start` | Starts the production server.              |
-| `npm run lint` | Runs ESLint for code linting.              |
+Visit `http://localhost:3000` to see your application.
 
 ## Project Structure
 
-```plaintext
-├── src
-│   ├── app
-│   │   ├── admin
-│   │   │   └── page.tsx
-│   │   ├── api
-│   │   │   └── auth
-│   │   │       ├── [...nextauth]
-│   │   │       │   └── route.ts
-│   │   │       └── signup
-│   │   │           └── route.ts
-│   │   ├── auth
-│   │   │   ├── signin
-│   │   │   │   └── page.tsx
-│   │   │   └── signup
-│   │   │       └── page.tsx
-│   │   ├── components
-│   │   │   ├── auth
-│   │   │   │   ├── signin-button.tsx
-│   │   │   │   └── signout-button.tsx
-│   │   │   └── ui
-│   │   │       ├── button.tsx
-│   │   │       ├── drawer.tsx
-│   │   │       ├── input.tsx
-│   │   │       ├── sheet.tsx
-│   │   │       └── tooltip.tsx
-│   │   ├── lib
-│   │   │   ├── actions.ts
-│   │   │   ├── prisma.ts
-│   │   │   └── utils.ts
-│   │   ├── layout.tsx
-│   │   └── page.tsx
-│   ├── components
-│   ├── hooks
-│   ├── styles
-│   └── ...
-├── prisma
-│   └── schema.prisma
-├── public
-│   └── dashboard-preview.png
-├── .gitignore
-├── next.config.ts
-├── package.json
-├── postcss.config.mjs
-├── tailwind.config.ts
-├── tsconfig.json
-└── README.md
-```
+src/
+├── app/ # Next.js App Router pages
+│ ├── admin/ # Admin dashboard routes
+│ ├── api/ # API routes
+│ └── auth/ # Authentication pages
+├── components/ # Reusable components
+│ ├── cases/ # Case management components
+│ ├── clients/ # Client management components
+│ └── ui/ # shadcn/ui components
+├── lib/ # Utility functions and configs
+└── styles/ # Global styles and Tailwind
 
-## Roadmap
+## Development
 
-For a detailed roadmap outlining new features, enhancements, and production deployment considerations, see [docs/roadmap.md](docs/roadmap.md).
+### Scripts
+
+| Command           | Description                   |
+|-------------------|-------------------------------|
+| `npm run dev`     | Start development server      |
+| `npm run build`   | Build for production          |
+| `npm run start`   | Start production server       |
+| `npm run lint`    | Run ESLint                    |
+| `npm run test`    | Run tests                     |
+
+### Key Features Implementation
+
+- **Document Processing**: Uses LangChain for document parsing and text extraction
+- **AI Integration**: Implements Deepseek R1 for context-aware document analysis
+- **Storage**: Cloudflare R2 integration for secure document storage
+- **Authentication**: NextAuth.js with database adapter
+- **API Routes**: RESTful endpoints for all CRUD operations
+- **UI Components**: Customized shadcn/ui components for consistent design
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
 
-1. **Fork the repository**
+- Code of Conduct
+- Development process
+- How to submit pull requests
+- Coding standards
 
-2. **Create a new branch**
+## Roadmap
 
-   ```bash
-   git checkout -b feature/YourFeature
-   ```
+See our detailed [Roadmap](docs/roadmap.md) for planned features and enhancements, including:
 
-3. **Commit your changes**
-
-   ```bash
-   git commit -m "Add some feature"
-   ```
-
-4. **Push to the branch**
-
-   ```bash
-   git push origin feature/YourFeature
-   ```
-
-5. **Open a Pull Request**
-
-Please ensure your code follows the project's code style and passes all linting checks.
+- Enhanced AI document analysis
+- Advanced search capabilities
+- Multi-tenant support
+- E-signature integration
+- Mobile application
 
 ## License
 
-[MIT](LICENSE)
+This project is licensed under the [MIT License](LICENSE).
 
--
